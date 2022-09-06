@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 #Создаваемая база данных
-cache.db
+src/cache.db
