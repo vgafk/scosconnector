@@ -128,5 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#Создаваемая база данных
+# Создаваемая база данных
 src/cache.db
+
+# PyCharm settinga
+.idea
+
