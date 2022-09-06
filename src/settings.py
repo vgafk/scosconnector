@@ -21,10 +21,10 @@ endpoint_urls = {
     'educational_programs': API_URL_V2 + 'educational_programs',
     'study_plans': API_URL_V2 + 'study_plans',
     'disciplines': API_URL_V2 + 'disciplines',
-    'study_plan_disciplines': API_URL_V2 + 'study_plans_disciplines',
+    'study_plan_disciplines': API_URL_V2 + 'study_plans/%unit_id/disciplines',
     'students': API_URL_V2 + 'students',
     'study_plan_students': API_URL_V2 + 'study_plans_students',
-    'contingent_flows': API_URL_V2 + 'contingent_flows',
+    'contingent_flows': API_URL_V2 + 'students/%unit_id/contingent_flows',
     'marks': API_URL_V2 + 'marks'
 }
 

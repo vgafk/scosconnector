@@ -19,6 +19,7 @@ from select import select
 
 
 class ScosUnit:
+    table_name: str
 
     @classmethod
     def from_list(cls, values):
@@ -33,7 +34,7 @@ class ScosUnit:
         pass
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         pass
 
     @classmethod
@@ -46,8 +47,13 @@ class ScosUnit:
                 unit_list.append(cls.from_list(row))
         return unit_list
 
+    def get_table(self):
+        return self.table_name
+
 
 class EducationalProgram(ScosUnit):
+    table_name = 'educational_programs'
+
     def __init__(self, title: str, direction: str, code_direction: str, start_year: str,
                  end_year: str, scos_id: str = '', external_id: str = ''):
         self.external_id = external_id
@@ -71,7 +77,7 @@ class EducationalProgram(ScosUnit):
         })
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
             unit_list.append(EducationalProgram(data['title'],
@@ -85,6 +91,8 @@ class EducationalProgram(ScosUnit):
 
 
 class StudyPlans(ScosUnit):
+    table_name = 'study_plans'
+
     def __init__(self, external_id: str, title: str, direction: str, code_direction: str, start_year: str,
                  end_year: str, education_form: str, educational_program: str, scos_id: str = ''):
         self.external_id = external_id
@@ -112,7 +120,7 @@ class StudyPlans(ScosUnit):
         })
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         sp_list = []
         for data in data_list:
             sp_list.append(StudyPlans(data['external_id'],
@@ -129,6 +137,8 @@ class StudyPlans(ScosUnit):
 
 
 class Disciplines(ScosUnit):
+    table_name = 'disciplines'
+
     def __init__(self, external_id: str, title: str, scos_id: str = 0):
         self.external_id = external_id
         self.title = title
@@ -143,7 +153,7 @@ class Disciplines(ScosUnit):
         })
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
             unit_list.append(Disciplines(data['external_id'],
@@ -153,6 +163,8 @@ class Disciplines(ScosUnit):
 
 
 class StudyPlanDisciplines(ScosUnit):
+    table_name = 'study_plan_disciplines'
+
     def __init__(self, study_plan: str, discipline: str, semester: int):
         self.study_plan_scos_id = study_plan
         self.discipline_scos_id = discipline
@@ -167,14 +179,16 @@ class StudyPlanDisciplines(ScosUnit):
         })
 
     @staticmethod
-    def get_list(study_plan: str, data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(StudyPlanDisciplines(study_plan, data['discipline'], data['semester']))
+            unit_list.append(StudyPlanDisciplines(unit_id, data['discipline'], data['semester']))
         return unit_list
 
 
 class Students(ScosUnit):
+    table_name = 'students'
+
     def __init__(self, external_id: str, surname: str, name: str, middle_name: str,  # date_of_birth: str,
                  snils: str, inn: str, email: str, study_year: str, scos_id: str = ''):
         self.external_id = external_id
@@ -202,7 +216,7 @@ class Students(ScosUnit):
                            })
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         sp_list = []
         for data in data_list:
@@ -223,12 +237,17 @@ class Students(ScosUnit):
 
 
 class StudyPlanStudents(ScosUnit):
+    table_name = 'study_plan_students'
+
     def __init__(self, study_plan: str, student: str):
         self.study_plan_scos_id = study_plan
         self.student_scos_id = student
+        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
 class ContingentFlow(ScosUnit):
+    table_name = 'contingent_flows'
+
     def __init__(self, student: str, contingent_flow: str, flow_type: str, date: str, faculty: str, education_form: str,
                  form_fin: str, details: str, scos_id: str = ''):
         self.student_scos_id = student
@@ -243,7 +262,7 @@ class ContingentFlow(ScosUnit):
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     @staticmethod
-    def get_list(student: str, data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
             unit_list.append(ContingentFlow(data['student_id'],
@@ -259,6 +278,8 @@ class ContingentFlow(ScosUnit):
 
 
 class Marks(ScosUnit):
+    table_name = 'marks'
+
     def __init__(self, discipline: str, study_plan: str, student: str, mark_type: str, mark_value: str, semester: str,
                  scos_id: str = ''):
         self.discipline = discipline
@@ -280,7 +301,7 @@ class Marks(ScosUnit):
                            })
 
     @staticmethod
-    def list_from_json(data_list):
+    def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
             unit_list.append(Marks(data['discipline']['external_id'],

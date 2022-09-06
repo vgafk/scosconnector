@@ -14,16 +14,14 @@ def check_connection():
     return resp.status_code, resp.text
 
 
-def get_data_from_scos(data_type: str, unit_id: str = '', added_unit: str = ''):
+def get_data_from_scos(data_type: str, unit_id: str = ''):
     page = 0
     last_page = 1
     results = []
     while page < last_page:
         url = endpoint_urls[data_type]
         if unit_id:
-            url += f'/{unit_id}'
-        if added_unit:
-            url += f'/{added_unit}'
+            url = url.replace('%unit_id', unit_id)
         resp_json = requests.get(url, headers=headers).json()
         try:
             results.extend(resp_json['results'])
@@ -36,33 +34,27 @@ def get_data_from_scos(data_type: str, unit_id: str = '', added_unit: str = ''):
 
 
 def get_all_data_from_scos():
-    get_educational_programs_from_scos()
-    get_disciplines_from_scos()
-    get_study_plans_from_scos()
-    get_students_from_scos()
-    get_marks_from_scos()
+    all_data = get_scos_units_list('educational_programs')
+    study_plans = get_scos_units_list('study_plans')
+    all_data.extend(study_plans)
+    all_data.extend(get_scos_units_list('disciplines'))
+    students, study_plan_students = get_scos_units_list('students')
+    all_data.extend(students)
+    all_data.extend(study_plan_students)
+    all_data.extend(get_scos_units_list('marks'))
+    for study_plan in study_plans:
+        all_data.extend(get_scos_units_list('study_plan_disciplines', study_plan.scos_id))
+    for student in students:
+        all_data.extend(get_scos_units_list('contingent_flows', student.scos_id))
+
+    for unit in all_data:
+        local_base.insert(unit)
 
 
-def get_educational_programs_from_scos():
-    programs_from_scos = get_data_from_scos('educational_programs')
-    programs_list = data_classes['educational_programs'].list_from_json(programs_from_scos)
-    for program in programs_list:
-        local_base.write_to_base(program, 'educational_programs', 'a')
-
-
-def get_disciplines_from_scos():
-    disciplines_from_scos = get_data_from_scos('disciplines')
-    disciplines_list = data_classes['disciplines'].list_from_json(disciplines_from_scos)
-    for discipline in disciplines_list:
-        local_base.write_to_base(discipline, 'disciplines', 'a')
-
-
-def get_study_plans_from_scos():
-    study_plans_from_scos = get_data_from_scos('study_plans')
-    study_plans_list = data_classes['study_plans'].list_from_json(study_plans_from_scos)
-    for study_plan in study_plans_list:
-        local_base.write_to_base(study_plan, 'study_plans', 'a')
-        get_study_plans_disciplines_from_scos(study_plan.scos_id)
+def get_scos_units_list(unit_type: str, unit_id: str = '') -> [ScosUnit]:
+    unit_data_from_scos = get_data_from_scos(unit_type, unit_id)
+    unit_list = data_classes[unit_type].list_from_json(unit_data_from_scos, unit_id)
+    return unit_list
 
 
 def get_study_plans_disciplines_from_scos(study_plan: str):
@@ -70,31 +62,31 @@ def get_study_plans_disciplines_from_scos(study_plan: str):
     study_plans_disciplines_list = data_classes['study_plan_disciplines'].get_list(study_plan,
                                                                                    study_plans_disciplines_from_scos)
     for study_plan_disciplines in study_plans_disciplines_list:
-        local_base.write_to_base(study_plan_disciplines, 'study_plan_disciplines', 'a')
+        local_base.insert(study_plan_disciplines)
 
 
 def get_students_from_scos():
     students_from_scos = get_data_from_scos('students')
     students_list, study_plans_list = data_classes['students'].list_from_json(students_from_scos)
     for student in students_list:
-        local_base.write_to_base(student, 'students', 'a')
+        local_base.insert(student)
         get_contingent_flows_from_scos(student.scos_id)
     for study_plans in study_plans_list:
-        local_base.write_to_base(study_plans, 'study_plan_students', 'a')
+        local_base.insert(study_plans)
 
 
 def get_contingent_flows_from_scos(student: str):
     contingent_flows_from_scos = get_data_from_scos('students', student, 'contingent_flows')
     contingent_flows_list = data_classes['contingent_flows'].get_list(student, contingent_flows_from_scos)
     for contingent_flows in contingent_flows_list:
-        local_base.write_to_base(contingent_flows, 'contingent_flows', 'a')
+        local_base.insert(contingent_flows)
 
 
 def get_marks_from_scos():
     marks_from_scos = get_data_from_scos('marks')
     marks_list = data_classes['marks'].list_from_json(marks_from_scos)
     for marks in marks_list:
-        local_base.write_to_base(marks, 'marks', 'a')
+        local_base.insert(marks)
 
 
 def add_data(data_type: str):
@@ -145,9 +137,6 @@ parameter = {'1': 'educational_programs', '2': 'study_plans', '3': 'disciplines'
 
 
 if __name__ == '__main__':
-    # print(check_connection())
-    # print(add_data(parameter['0']))
-    # print(update_data(parameter['8']))
-    # get_data_from_scos(parameter['8'])
-    # get_all_data_from_scos()
-    update_all_data()
+    get_all_data_from_scos()
+    # update_all_data()
+    pass

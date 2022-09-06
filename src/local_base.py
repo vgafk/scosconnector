@@ -32,6 +32,25 @@ class SQL:
             write_to_log(f'Ошибка локальной базы: {error}')
 
 
+def insert(unit: ScosUnit):
+    with SQL() as sql:
+        columns = ','.join(unit.__dict__.keys())
+        values = '"' + '","'.join(unit.__dict__.values()) + '"'
+        query = f'INSERT INTO {unit.get_table()}({columns}) ' \
+                f'VALUES({values});'
+        sql.execute(query)
+        write_to_log(f'Запись в {unit.get_table()}')
+
+
+def update(unit: ScosUnit):
+    with SQL() as sql:
+        params = [f'{name} = "{val}"' for name, val in unit.__dict__.items()]
+        query = f'UPDATE {unit.get_table} SET {", ".join(params)} ' \
+                f'WHERE external_id = "{unit.__dict__["external_id"]}"'
+        sql.execute(query)
+        write_to_log(f'Запись в {unit.get_table()}')
+
+
 def check_base():
     if not exists(local_base_path):
         write_to_log('Файл базы не обнаружен, создаем новый...')
@@ -47,19 +66,7 @@ def create_base():
             write_to_log(f'Создан триггер обновления для {name}')
 
 
-def write_to_base(unit: ScosUnit, table, action):
+def get_updated_data(table: str):
     with SQL() as sql:
-        if action == 'a':
-            columns = ','.join(unit.__dict__.keys())
-            values = '"' + '","'.join(unit.__dict__.values()) + '"'
-            query = f'INSERT INTO {table}({columns}) ' \
-                    f'VALUES({values});'
-        elif action == 'u':
-            params = [f'{name} = "{val}"' for name, val in unit.__dict__.items()]
-            query = f'UPDATE {table} SET {", ".join(params)} WHERE external_id = "{unit.__dict__["external_id"]}"'
+        query = f"SELECT * FROM {table} WHERE last_update > last_scos_update"
         print(query)
-        sql.execute(query)
-        write_to_log(f'Запись в {table}')
-
-def get_updated_data(data_type: str):
-    pass
