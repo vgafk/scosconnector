@@ -46,12 +46,12 @@ class EducationalProgram(ScosUnit):
 
     def __init__(self, **kwargs):
         self.external_id = kwargs['external_id']
+        self.id = kwargs['id']
         self.title = kwargs['title']
         self.direction = kwargs['direction']
         self.code_direction = kwargs['code_direction']
         self.start_year = kwargs['start_year']
         self.end_year = kwargs['end_year']
-        self.scos_id = kwargs['id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -61,8 +61,7 @@ class EducationalProgram(ScosUnit):
             'direction': self.direction,
             'code_direction': self.code_direction,
             'start_year': self.start_year,
-            'end_year': self.end_year,
-            'id': self.scos_id
+            'end_year': self.end_year
         })
 
     @staticmethod
@@ -78,14 +77,14 @@ class StudyPlans(ScosUnit):
 
     def __init__(self, **kwargs):
         self.external_id = kwargs['external_id']
+        self.id = kwargs['id']
         self.title = kwargs['title']
         self.direction = kwargs['direction']
         self.code_direction = kwargs['code_direction']
         self.start_year = kwargs['start_year']
         self.end_year = kwargs['end_year']
         self.education_form = kwargs['education_form']
-        self.educational_program_scos_id = kwargs['educational_program']
-        self.scos_id = kwargs['scos_id']
+        self.educational_program_id = kwargs['educational_program_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -97,8 +96,8 @@ class StudyPlans(ScosUnit):
             'start_year': self.start_year,
             'end_year': self.end_year,
             'education_form': self.education_form,
-            'educational_program': self.educational_program_scos_id,
-            'id': self.scos_id
+            'educational_program': self.educational_program_id,
+            'id': self.id
         })
 
     @staticmethod
@@ -113,17 +112,17 @@ class StudyPlans(ScosUnit):
 class Disciplines(ScosUnit):
     table_name = 'disciplines'
 
-    def __init__(self, external_id: str, title: str, scos_id: str = 0):
-        self.external_id = external_id
-        self.title = title
-        self.scos_id = scos_id
+    def __init__(self, **kwargs):
+        self.external_id = kwargs['external_id']
+        self.title = kwargs['title']
+        self.id = kwargs['id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({
             'external_id': self.external_id,
             'title': self.title,
-            'id': self.scos_id
+            'id': self.id
         })
 
     @staticmethod
@@ -138,23 +137,23 @@ class StudyPlanDisciplines(ScosUnit):
     table_name = 'study_plan_disciplines'
 
     def __init__(self, **kwargs):
-        self.study_plan_scos_id = kwargs['unit_id']
-        self.discipline_scos_id = kwargs['discipline']
+        self.study_plan = kwargs['study_plan']
+        self.discipline = kwargs['discipline']
         self.semester = kwargs['semester']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({
-            'study_plan': self.study_plan_scos_id,
-            'discipline': self.discipline_scos_id,
-            'semester': int(self.semester)
+            'study_plan': self.study_plan,
+            'discipline': self.discipline,
+            'semester': self.semester
         })
 
     @staticmethod
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(StudyPlanDisciplines(**data))
+            unit_list.append(StudyPlanDisciplines(study_plan=unit_id, **data))
         return unit_list
 
 
@@ -172,7 +171,6 @@ class Students(ScosUnit):
         self.inn = kwargs['inn']
         self.email = kwargs['email']
         self.study_year = kwargs['study_year']
-        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -184,7 +182,7 @@ class Students(ScosUnit):
                            'snils': self.snils,
                            'inn': self.inn,
                            'email': self.email,
-                           'study_year': int(self.study_year)
+                           'study_year': self.study_year
                            })
 
     @staticmethod
@@ -194,24 +192,28 @@ class Students(ScosUnit):
         for data in data_list:
             unit_list.append(Students(**data))
             for sp in data['study_plans']:
-                sp_list.append(StudyPlanStudents(**sp))
+                sp_list.append(StudyPlanStudents(study_plan=sp['id'], student=data['id']))
         return unit_list, sp_list
 
 
 class StudyPlanStudents(ScosUnit):
     table_name = 'study_plan_students'
 
-    def __init__(self, **kwargs):
-        self.study_plan_scos_id = kwargs['study_plan']
-        self.student_scos_id = kwargs['student']
+    def __init__(self, study_plan, student):
+        self.study_plan = study_plan
+        self.student = student
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    def to_json(self):
+        return json.dumps({'study_plan': self.study_plan,
+                           'student': self.student})
 
 
 class ContingentFlow(ScosUnit):
     table_name = 'contingent_flows'
 
     def __init__(self, **kwargs):
-        self.student_scos_id = kwargs['student_id']
+        self.student = kwargs['student_id']
         self.contingent_flow = kwargs['contingent_flow']
         self.flow_type = kwargs['flow_type']
         self.date = kwargs['date']
@@ -219,7 +221,7 @@ class ContingentFlow(ScosUnit):
         self.education_form = kwargs['education_form']
         self.form_fin = kwargs['form_fin']
         self.details = kwargs['details']
-        self.scos_id = kwargs['scos_id']
+        self.id = kwargs['id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     @staticmethod
@@ -234,13 +236,14 @@ class Marks(ScosUnit):
     table_name = 'marks'
 
     def __init__(self, **kwargs):
-        self.discipline = kwargs['discipline']
-        self.study_plan = kwargs['study_plan']
-        self.student = kwargs['student']
+        self.external_id = kwargs['external_id']
+        self.id = kwargs['id']
+        self.discipline = kwargs['discipline']['id']
+        self.study_plan = kwargs['study_plan']['id']
+        self.student = kwargs['student']['id']
         self.mark_type = kwargs['mark_type']
-        self.mark_value = kwargs['mark_value']
+        self.mark_value = kwargs['value']
         self.semester = kwargs['semester']
-        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -249,7 +252,8 @@ class Marks(ScosUnit):
                            'student': self.student,
                            'mark_type': self.mark_type,
                            'mark_value': int(self.mark_value),
-                           'semester': int(self.semester)
+                           'semester': int(self.semester),
+                           'external_id': self.external_id
                            })
 
     @staticmethod

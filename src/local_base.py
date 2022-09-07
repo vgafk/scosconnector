@@ -1,10 +1,14 @@
 import sqlite3
 from os.path import exists
+from loguru import logger
 
 from scos_units import ScosUnit
 from settings import local_base_path
-from loger import write_to_log
 from tables import tables, update_trigger_text
+
+
+# def to_str(val):
+#     return '' if val is None else str(val)
 
 
 class SQL:
@@ -25,7 +29,7 @@ class SQL:
             for value in values:
                 records.append(dict(zip(column_names, value)))
         except sqlite3.Error as error:
-            write_to_log(f'Ошибка локальной базы: {error}')
+            logger.error(f'Ошибка локальной базы: {error}')
         return records
 
     def execute(self, query):
@@ -33,17 +37,18 @@ class SQL:
             self.cur.execute(query)
             self.conn.commit()
         except sqlite3.Error as error:
-            write_to_log(f'Ошибка локальной базы: {error}')
+            logger.error(f'Ошибка локальной базы: {error}')
 
 
 def insert(unit: ScosUnit):
     with SQL() as sql:
         columns = ','.join(unit.__dict__.keys())
-        values = '"' + '","'.join(unit.__dict__.values()) + '"'
+        values = '"' + '","'.join(list(map(str, unit.__dict__.values()))) + '"'
         query = f'INSERT INTO {unit.get_table()}({columns}) ' \
                 f'VALUES({values});'
+        logger.debug(query)
         sql.execute(query)
-        write_to_log(f'Запись в {unit.get_table()}')
+        logger.info(f'Запись в {unit.get_table()}')
 
 
 def update(unit: ScosUnit):
@@ -52,12 +57,12 @@ def update(unit: ScosUnit):
         query = f'UPDATE {unit.get_table} SET {", ".join(params)} ' \
                 f'WHERE external_id = "{unit.__dict__["external_id"]}"'
         sql.execute(query)
-        write_to_log(f'Запись в {unit.get_table()}')
+        logger.info(f'Обновление таблицы {unit.get_table()}')
 
 
 def base_exist():
     if not exists(local_base_path):
-        write_to_log('Файл базы не обнаружен, создаем новый...')
+        logger.info('Файл базы не обнаружен, создаем новый...')
         return False
     else:
         return True
@@ -67,9 +72,9 @@ def create_base():
     with SQL() as sql:
         for name, table in tables.items():
             sql.execute(table)
-            write_to_log(f'Создана таблица {name}')
+            logger.info(f'Создана таблица {name}')
             sql.execute(update_trigger_text.replace('%name', name))
-            write_to_log(f'Создан триггер обновления для {name}')
+            logger.info(f'Создан триггер обновления для {name}')
 
 
 def get_updated_data(table: str):

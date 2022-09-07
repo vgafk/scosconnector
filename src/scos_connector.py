@@ -43,9 +43,10 @@ def get_all_data_from_scos():
     all_data.extend(study_plan_students)
     all_data.extend(get_scos_units_list('marks'))
     for study_plan in study_plans:
-        all_data.extend(get_scos_units_list('study_plan_disciplines', study_plan.scos_id))
+        all_data.extend(get_scos_units_list('study_plan_disciplines', study_plan.id))
     for student in students:
-        all_data.extend(get_scos_units_list('contingent_flows', student.scos_id))
+        all_data.extend(get_scos_units_list('contingent_flows', student.id))
+    return all_data
 
 
 def get_scos_units_list(unit_type: str, unit_id: str = '') -> [ScosUnit]:
@@ -99,6 +100,8 @@ def update_data(data_type: str):
     updated_units = []
     for data in updated_data:
         updated_units.append(data_classes[data_type].from_dict(data))
+
+
 #     return send_update_request(data_type, data_classes[data_type])
 
 
@@ -108,7 +111,7 @@ def create_request_row(title: str, units: list[ScosUnit]) -> str:
     return request_row
 
 
-def send_add_request(json_parameter: str, scos_unit: ScosUnit):             # TODO переписать на вызов из базы
+def send_add_request(json_parameter: str, scos_unit: ScosUnit):  # TODO переписать на вызов из базы
     # Файл должен называться как параметр, потому просто добавляем расширение csv
     # json_parameter_data = scos_unit.from_file(json_parameter + '.csv')
     # body = create_request_row(json_parameter, json_parameter_data)
@@ -119,23 +122,21 @@ def send_add_request(json_parameter: str, scos_unit: ScosUnit):             # TO
 
 
 # def send_update_request(json_parameter: str, scos_unit: ScosUnit):
-    # Файл должен называться как параметр плюс _u на конце, потому просто добавляем расширение csv
-    # scos_units = scos_unit.from_file(json_parameter + '_u.csv')
-    # for unit in scos_units:
-        # unit_id = get_unit_id(json_parameter, unit)
-        # unit.organization_id = settings.ORG_ID      # добавляем id организации для упрощения формирования json строки
-        # body = json.dumps(unit.__dict__)
-        # print(f'{endpoint_urls[json_parameter]}/{unit_id}')
-        # print(body)
-        # resp = requests.put(f'{endpoint_urls[json_parameter]}/{unit_id}', headers=headers, data=body)
-        # print(resp.status_code, resp.text)
-    # return 'done'
-
+# Файл должен называться как параметр плюс _u на конце, потому просто добавляем расширение csv
+# scos_units = scos_unit.from_file(json_parameter + '_u.csv')
+# for unit in scos_units:
+# unit_id = get_unit_id(json_parameter, unit)
+# unit.organization_id = settings.ORG_ID      # добавляем id организации для упрощения формирования json строки
+# body = json.dumps(unit.__dict__)
+# print(f'{endpoint_urls[json_parameter]}/{unit_id}')
+# print(body)
+# resp = requests.put(f'{endpoint_urls[json_parameter]}/{unit_id}', headers=headers, data=body)
+# print(resp.status_code, resp.text)
+# return 'done'
 
 
 parameter = {'1': 'educational_programs', '2': 'study_plans', '3': 'disciplines', '4': 'study_plan_disciplines',
              '5': 'students', '6': 'study_plan_students', '7': 'contingent_flows', '8': 'marks'}
-
 
 if __name__ == '__main__':
     # get_all_data_from_scos()
