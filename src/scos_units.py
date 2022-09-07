@@ -22,8 +22,8 @@ class ScosUnit:
     table_name: str
 
     @classmethod
-    def from_list(cls, values):
-        return cls(*values)
+    def from_dict(cls, data):
+        return cls(**data)
 
     @classmethod
     def to_json(cls):
@@ -37,16 +37,6 @@ class ScosUnit:
     def list_from_json(data_list, unit_id=''):
         pass
 
-    @classmethod
-    def from_file(cls, file_name: str):
-        unit_list = []
-        with open(file_name, 'r', newline='') as csvfile:
-            data = csv.reader(csvfile, delimiter=';')
-            next(data, None)  # пропускаем строку с заголовками
-            for row in data:
-                unit_list.append(cls.from_list(row))
-        return unit_list
-
     def get_table(self):
         return self.table_name
 
@@ -54,15 +44,14 @@ class ScosUnit:
 class EducationalProgram(ScosUnit):
     table_name = 'educational_programs'
 
-    def __init__(self, title: str, direction: str, code_direction: str, start_year: str,
-                 end_year: str, scos_id: str = '', external_id: str = ''):
-        self.external_id = external_id
-        self.title = title
-        self.direction = direction
-        self.code_direction = code_direction
-        self.start_year = start_year
-        self.end_year = end_year
-        self.scos_id = scos_id
+    def __init__(self, **kwargs):
+        self.external_id = kwargs['external_id']
+        self.title = kwargs['title']
+        self.direction = kwargs['direction']
+        self.code_direction = kwargs['code_direction']
+        self.start_year = kwargs['start_year']
+        self.end_year = kwargs['end_year']
+        self.scos_id = kwargs['id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -80,30 +69,23 @@ class EducationalProgram(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(EducationalProgram(data['title'],
-                                                data['direction'],
-                                                data['code_direction'],
-                                                data['start_year'],
-                                                data['end_year'],
-                                                data['id'],
-                                                data['external_id']))
+            unit_list.append(EducationalProgram(**data))
         return unit_list
 
 
 class StudyPlans(ScosUnit):
     table_name = 'study_plans'
 
-    def __init__(self, external_id: str, title: str, direction: str, code_direction: str, start_year: str,
-                 end_year: str, education_form: str, educational_program: str, scos_id: str = ''):
-        self.external_id = external_id
-        self.title = title
-        self.direction = direction
-        self.code_direction = code_direction
-        self.start_year = start_year
-        self.end_year = end_year
-        self.education_form = education_form
-        self.educational_program_scos_id = educational_program
-        self.scos_id = scos_id
+    def __init__(self, **kwargs):
+        self.external_id = kwargs['external_id']
+        self.title = kwargs['title']
+        self.direction = kwargs['direction']
+        self.code_direction = kwargs['code_direction']
+        self.start_year = kwargs['start_year']
+        self.end_year = kwargs['end_year']
+        self.education_form = kwargs['education_form']
+        self.educational_program_scos_id = kwargs['educational_program']
+        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -123,15 +105,7 @@ class StudyPlans(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         sp_list = []
         for data in data_list:
-            sp_list.append(StudyPlans(data['external_id'],
-                                      data['title'],
-                                      data['direction'],
-                                      data['code_direction'],
-                                      data['start_year'],
-                                      data['end_year'],
-                                      data['education_form'],
-                                      data['educational_program_id'],
-                                      data['id']))
+            sp_list.append(StudyPlans(**data))
 
         return sp_list
 
@@ -156,19 +130,17 @@ class Disciplines(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(Disciplines(data['external_id'],
-                                         data['title'],
-                                         data['id']))
+            unit_list.append(Disciplines(**data))
         return unit_list
 
 
 class StudyPlanDisciplines(ScosUnit):
     table_name = 'study_plan_disciplines'
 
-    def __init__(self, study_plan: str, discipline: str, semester: int):
-        self.study_plan_scos_id = study_plan
-        self.discipline_scos_id = discipline
-        self.semester = str(semester)
+    def __init__(self, **kwargs):
+        self.study_plan_scos_id = kwargs['unit_id']
+        self.discipline_scos_id = kwargs['discipline']
+        self.semester = kwargs['semester']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -182,25 +154,25 @@ class StudyPlanDisciplines(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(StudyPlanDisciplines(unit_id, data['discipline'], data['semester']))
+            unit_list.append(StudyPlanDisciplines(**data))
         return unit_list
 
 
 class Students(ScosUnit):
     table_name = 'students'
 
-    def __init__(self, external_id: str, surname: str, name: str, middle_name: str,  # date_of_birth: str,
-                 snils: str, inn: str, email: str, study_year: str, scos_id: str = ''):
-        self.external_id = external_id
-        self.surname = surname
-        self.name = name
-        self.middle_name = middle_name
+    def __init__(self, **kwargs):
+        self.id = kwargs['id']
+        self.external_id = kwargs['external_id']
+        self.surname = kwargs['surname']
+        self.name = kwargs['name']
+        self.middle_name = kwargs['middle_name']
         # self.date_of_birth = date_of_birth
-        self.snils = snils
-        self.inn = inn
-        self.email = email
-        self.study_year = str(study_year)
-        self.scos_id = scos_id
+        self.snils = kwargs['snils']
+        self.inn = kwargs['inn']
+        self.email = kwargs['email']
+        self.study_year = kwargs['study_year']
+        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -220,75 +192,55 @@ class Students(ScosUnit):
         unit_list = []
         sp_list = []
         for data in data_list:
-            unit_list.append(Students(data['external_id'],
-                                      data['surname'],
-                                      data['name'],
-                                      data['middle_name'],
-                                      # data['dateOfBirth'],
-                                      data['snils'],
-                                      data['inn'],
-                                      data['email'],
-                                      data['study_year'],
-                                      data['id']))
+            unit_list.append(Students(**data))
             for sp in data['study_plans']:
-                sp_list.append(StudyPlanStudents(data['id'], sp['id']))
-
+                sp_list.append(StudyPlanStudents(**sp))
         return unit_list, sp_list
 
 
 class StudyPlanStudents(ScosUnit):
     table_name = 'study_plan_students'
 
-    def __init__(self, study_plan: str, student: str):
-        self.study_plan_scos_id = study_plan
-        self.student_scos_id = student
+    def __init__(self, **kwargs):
+        self.study_plan_scos_id = kwargs['study_plan']
+        self.student_scos_id = kwargs['student']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
 class ContingentFlow(ScosUnit):
     table_name = 'contingent_flows'
 
-    def __init__(self, student: str, contingent_flow: str, flow_type: str, date: str, faculty: str, education_form: str,
-                 form_fin: str, details: str, scos_id: str = ''):
-        self.student_scos_id = student
-        self.contingent_flow = contingent_flow
-        self.flow_type = flow_type
-        self.date = date
-        self.faculty = faculty
-        self.education_form = education_form
-        self.form_fin = form_fin
-        self.details = details
-        self.scos_id = scos_id
+    def __init__(self, **kwargs):
+        self.student_scos_id = kwargs['student_id']
+        self.contingent_flow = kwargs['contingent_flow']
+        self.flow_type = kwargs['flow_type']
+        self.date = kwargs['date']
+        self.faculty = kwargs['faculty']
+        self.education_form = kwargs['education_form']
+        self.form_fin = kwargs['form_fin']
+        self.details = kwargs['details']
+        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     @staticmethod
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(ContingentFlow(data['student_id'],
-                                            data['contingent_flow'],
-                                            data['flow_type'],
-                                            data['date'],
-                                            data['faculty'],
-                                            data['education_form'],
-                                            data['form_fin'],
-                                            data['details'],
-                                            data['id']))
+            unit_list.append(ContingentFlow(**data))
         return unit_list
 
 
 class Marks(ScosUnit):
     table_name = 'marks'
 
-    def __init__(self, discipline: str, study_plan: str, student: str, mark_type: str, mark_value: str, semester: str,
-                 scos_id: str = ''):
-        self.discipline = discipline
-        self.study_plan = study_plan
-        self.student = student
-        self.mark_type = mark_type
-        self.mark_value = str(mark_value)
-        self.semester = str(semester)
-        self.scos_id = scos_id
+    def __init__(self, **kwargs):
+        self.discipline = kwargs['discipline']
+        self.study_plan = kwargs['study_plan']
+        self.student = kwargs['student']
+        self.mark_type = kwargs['mark_type']
+        self.mark_value = kwargs['mark_value']
+        self.semester = kwargs['semester']
+        self.scos_id = kwargs['scos_id']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
@@ -304,13 +256,7 @@ class Marks(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(Marks(data['discipline']['external_id'],
-                                   data['study_plan']['external_id'],
-                                   data['student']['external_id'],
-                                   data['mark_type'],
-                                   data['value'],
-                                   data['semester'],
-                                   data['id']))
+            unit_list.append(Marks(**data))
         return unit_list
 
 

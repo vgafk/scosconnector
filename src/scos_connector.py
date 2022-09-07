@@ -47,13 +47,10 @@ def get_all_data_from_scos():
     for student in students:
         all_data.extend(get_scos_units_list('contingent_flows', student.scos_id))
 
-    for unit in all_data:
-        local_base.insert(unit)
-
 
 def get_scos_units_list(unit_type: str, unit_id: str = '') -> [ScosUnit]:
     unit_data_from_scos = get_data_from_scos(unit_type, unit_id)
-    unit_list = data_classes[unit_type].list_from_json(unit_data_from_scos, unit_id)
+    unit_list = data_classes[unit_type].list_from_json(unit_data_from_scos, unit_id=unit_id)
     return unit_list
 
 
@@ -98,7 +95,10 @@ def update_all_data():
 
 
 def update_data(data_type: str):
-    updated_data = local_base.get_updated_data('students')
+    updated_data = local_base.get_updated_data(data_type)
+    updated_units = []
+    for data in updated_data:
+        updated_units.append(data_classes[data_type].from_dict(data))
 #     return send_update_request(data_type, data_classes[data_type])
 
 
@@ -110,11 +110,12 @@ def create_request_row(title: str, units: list[ScosUnit]) -> str:
 
 def send_add_request(json_parameter: str, scos_unit: ScosUnit):             # TODO переписать на вызов из базы
     # Файл должен называться как параметр, потому просто добавляем расширение csv
-    json_parameter_data = scos_unit.from_file(json_parameter + '.csv')
-    body = create_request_row(json_parameter, json_parameter_data)
-    resp = requests.post(endpoint_urls[json_parameter], headers=headers,
-                         data=body)
-    return resp.status_code, resp.text
+    # json_parameter_data = scos_unit.from_file(json_parameter + '.csv')
+    # body = create_request_row(json_parameter, json_parameter_data)
+    # resp = requests.post(endpoint_urls[json_parameter], headers=headers,
+    #                      data=body)
+    # return resp.status_code, resp.text
+    pass
 
 
 # def send_update_request(json_parameter: str, scos_unit: ScosUnit):
@@ -137,6 +138,6 @@ parameter = {'1': 'educational_programs', '2': 'study_plans', '3': 'disciplines'
 
 
 if __name__ == '__main__':
-    get_all_data_from_scos()
-    # update_all_data()
+    # get_all_data_from_scos()
+    update_all_data()
     pass

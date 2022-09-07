@@ -17,12 +17,16 @@ class SQL:
         self.cur.close()
         self.conn.close()
 
-    def fetchall(self, query):
+    def get_dict(self, query):
+        records = []
         try:
-            data = self.cur.execute(query).fetchall()
+            values = self.cur.execute(query).fetchall()
+            column_names = [column[0] for column in self.cur.description]
+            for value in values:
+                records.append(dict(zip(column_names, value)))
         except sqlite3.Error as error:
             write_to_log(f'Ошибка локальной базы: {error}')
-        return data
+        return records
 
     def execute(self, query):
         try:
@@ -51,10 +55,12 @@ def update(unit: ScosUnit):
         write_to_log(f'Запись в {unit.get_table()}')
 
 
-def check_base():
+def base_exist():
     if not exists(local_base_path):
         write_to_log('Файл базы не обнаружен, создаем новый...')
-        create_base()
+        return False
+    else:
+        return True
 
 
 def create_base():
@@ -69,4 +75,5 @@ def create_base():
 def get_updated_data(table: str):
     with SQL() as sql:
         query = f"SELECT * FROM {table} WHERE last_update > last_scos_update"
-        print(query)
+        return sql.get_dict(query)
+
