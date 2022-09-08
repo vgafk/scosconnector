@@ -23,5 +23,5 @@ if __name__ == "__main__":
         local_base.create_base()
         get_all_data_from_scos()
 
-    # delete_data_from_scos()
-    update_data_in_scos()
+    delete_data_from_scos()
+    # update_data_in_scos()

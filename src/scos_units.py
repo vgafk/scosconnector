@@ -200,8 +200,9 @@ class Students(ScosUnit):
             try:
                 for sp in data['study_plans']:
                     sp_list.append(StudyPlanStudents(study_plan=sp['id'], student=data['id']))
-            except KeyError as k_error:
-                logger.info(k_error)
+            except KeyError as k_error:          # При создании экземпляра из данных выбранных из локальной базы,
+                if k_error != 'study_plans':     # данные приходят без вложенного study_plans, для избежания ошибки
+                    logger.error(f'Нет ключа {k_error}')  # игнорим это исключение
         return unit_list, sp_list
 
 
