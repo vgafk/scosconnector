@@ -8,10 +8,15 @@ def get_all_data_from_scos():
         local_base.insert(unit)
 
 
+def update_data_in_scos():
+    local_updated_data = local_base.get_all_updated_data()
+    scos_connector.update_data(local_updated_data)
+
+
 if __name__ == "__main__":
     if not local_base.base_exist():
         local_base.create_base()
-    get_all_data_from_scos()
+        get_all_data_from_scos()
 
-
+    update_data_in_scos()
 

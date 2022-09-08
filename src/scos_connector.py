@@ -1,9 +1,10 @@
+from loguru import logger
 import requests
-import json
+
 
 import local_base
 import settings
-from settings import CHECK_CONNECTION, endpoint_urls
+from settings import CHECK_CONNECTION, endpoint_urls, API_codes
 from scos_units import ScosUnit, data_classes
 
 headers = {'Content-Type': 'application/json', 'X-CN-UUID': settings.X_CN_UUID}
@@ -49,7 +50,7 @@ def get_all_data_from_scos():
     return all_data
 
 
-def get_scos_units_list(unit_type: str, unit_id: str = '') -> [ScosUnit]:
+def get_scos_units_list(unit_type: str, unit_id: str = ''):
     unit_data_from_scos = get_data_from_scos(unit_type, unit_id)
     unit_list = data_classes[unit_type].list_from_json(unit_data_from_scos, unit_id=unit_id)
     return unit_list
@@ -91,23 +92,20 @@ def add_data(data_type: str):
     return send_add_request(data_type, data_classes[data_type])
 
 
-def update_all_data():
-    update_data('students')
+def update_data(updated_data: [ScosUnit]):
+    for unit in updated_data:
+        send_update_request(unit)
 
 
-def update_data(data_type: str):
-    updated_data = local_base.get_updated_data(data_type)
-    updated_units = []
-    for data in updated_data:
-        updated_units.append(data_classes[data_type].from_dict(data))
+# def create_request_row(title: str, units: list[ScosUnit]) -> str:
+#     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
+#                   f'"{title}": {[ob.to_json() for ob in units]}}}'
+#     return request_row
 
 
-#     return send_update_request(data_type, data_classes[data_type])
-
-
-def create_request_row(title: str, units: list[ScosUnit]) -> str:
+def create_request_row(units: list, title: str):
     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
-                  f'"{title}": {[ob.to_json() for ob in units]}}}'
+                      f'"{title}": {[ob.to_json() for ob in units]}}}'
     return request_row
 
 
@@ -121,24 +119,13 @@ def send_add_request(json_parameter: str, scos_unit: ScosUnit):  # TODO пере
     pass
 
 
-# def send_update_request(json_parameter: str, scos_unit: ScosUnit):
-# Файл должен называться как параметр плюс _u на конце, потому просто добавляем расширение csv
-# scos_units = scos_unit.from_file(json_parameter + '_u.csv')
-# for unit in scos_units:
-# unit_id = get_unit_id(json_parameter, unit)
-# unit.organization_id = settings.ORG_ID      # добавляем id организации для упрощения формирования json строки
-# body = json.dumps(unit.__dict__)
-# print(f'{endpoint_urls[json_parameter]}/{unit_id}')
-# print(body)
-# resp = requests.put(f'{endpoint_urls[json_parameter]}/{unit_id}', headers=headers, data=body)
-# print(resp.status_code, resp.text)
-# return 'done'
+def send_update_request(scos_unit: ScosUnit):
+    body = scos_unit.to_json()
+    url = endpoint_urls[scos_unit.get_table()] + '/' + scos_unit.id
+    resp = requests.put(url, headers=headers, data=body)
+    logger.info(body)
+    if resp.status_code not in API_codes['Success']:
+        logger.error(body)
+        logger.error(resp.text)
+    return resp.status_code, resp.text
 
-
-parameter = {'1': 'educational_programs', '2': 'study_plans', '3': 'disciplines', '4': 'study_plan_disciplines',
-             '5': 'students', '6': 'study_plan_students', '7': 'contingent_flows', '8': 'marks'}
-
-if __name__ == '__main__':
-    # get_all_data_from_scos()
-    update_all_data()
-    pass

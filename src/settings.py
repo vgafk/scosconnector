@@ -28,3 +28,6 @@ endpoint_urls = {
     'marks': API_URL_V2 + 'marks'
 }
 
+API_codes = {
+    'Success': [201]
+}

@@ -9,7 +9,8 @@ tables = {
                 "end_year" INTEGER NOT NULL,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'study_plans': '''CREATE TABLE "study_plans" (
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
@@ -22,21 +23,24 @@ tables = {
                 "educational_program_id" INTEGER NOT NULL,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'disciplines': '''CREATE TABLE "disciplines" (
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "title"	VARCHAR(256) NOT NULL,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,               
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'study_plan_disciplines': '''CREATE TABLE "study_plan_disciplines" (
                 "study_plan" INTEGER NOT NULL,
                 "discipline" INTEGER NOT NULL,
                 "semester" INTEGER,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'students': '''CREATE TABLE "students" (
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
@@ -51,14 +55,16 @@ tables = {
                 "study_year" INTEGER,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'study_plan_students': '''CREATE TABLE "study_plan_students" (
                 "external_id" VARCHAR(256),
                 "study_plan" VARCHAR(256),
                 "student" VARCHAR(256),
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'contingent_flows': '''CREATE TABLE "contingent_flows" (
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
@@ -72,7 +78,8 @@ tables = {
                 "details"	VARCHAR(256),
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);''',
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);''',
     'marks': '''CREATE TABLE "marks" (
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
@@ -84,7 +91,8 @@ tables = {
                 "semester" INTEGER NOT NULL,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
-                "deleted" DATETIME);'''#,
+                "deleted" DATETIME,
+                "deleted_scos" DATETIME);'''#,
                 #PRIMARY KEY("external_id" AUTOINCREMENT));'''
 }
 

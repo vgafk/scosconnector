@@ -1,8 +1,8 @@
 import csv
 import json
 from datetime import datetime
-from select import select
-
+from settings import ORG_ID
+from loguru import logger
 
 #  Форма обучения
 # education_form = {'заочная': 'EXTRAMURAL', 'очная': 'FULL_TIME','очнозаочная': 'PART_TIME',
@@ -39,6 +39,9 @@ class ScosUnit:
 
     def get_table(self):
         return self.table_name
+
+    def id(self):
+        return self.id
 
 
 class EducationalProgram(ScosUnit):
@@ -170,11 +173,13 @@ class Students(ScosUnit):
         self.snils = kwargs['snils']
         self.inn = kwargs['inn']
         self.email = kwargs['email']
+        self.phone = kwargs['phone']
         self.study_year = kwargs['study_year']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
-        return json.dumps({'external_id': self.external_id,
+        return json.dumps({'organization_id': ORG_ID,
+                           'external_id': self.external_id,
                            'surname': self.surname,
                            'name': self.name,
                            'middle_name': self.middle_name,
@@ -182,6 +187,7 @@ class Students(ScosUnit):
                            'snils': self.snils,
                            'inn': self.inn,
                            'email': self.email,
+                           'phone': self.phone,
                            'study_year': self.study_year
                            })
 
@@ -191,8 +197,11 @@ class Students(ScosUnit):
         sp_list = []
         for data in data_list:
             unit_list.append(Students(**data))
-            for sp in data['study_plans']:
-                sp_list.append(StudyPlanStudents(study_plan=sp['id'], student=data['id']))
+            try:
+                for sp in data['study_plans']:
+                    sp_list.append(StudyPlanStudents(study_plan=sp['id'], student=data['id']))
+            except KeyError as k_error:
+                logger.info(k_error)
         return unit_list, sp_list
 
 
@@ -238,22 +247,36 @@ class Marks(ScosUnit):
     def __init__(self, **kwargs):
         self.external_id = kwargs['external_id']
         self.id = kwargs['id']
-        self.discipline = kwargs['discipline']['id']
-        self.study_plan = kwargs['study_plan']['id']
-        self.student = kwargs['student']['id']
+        try:
+            self.discipline = kwargs['discipline']['external_id']
+        except TypeError:
+            self.discipline = kwargs['discipline']
+        try:
+            self.study_plan = kwargs['study_plan']['external_id']
+        except TypeError:
+            self.study_plan = kwargs['study_plan']
+        try:
+            self.student = kwargs['student']['external_id']
+        except TypeError:
+            self.student = kwargs['student']
         self.mark_type = kwargs['mark_type']
-        self.mark_value = kwargs['value']
+        try:
+            self.mark_value = kwargs['value']
+        except KeyError:
+            self.mark_value = kwargs['mark_value']
+
         self.semester = kwargs['semester']
         self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
-        return json.dumps({'discipline': self.discipline,
+        return json.dumps({'organization_id': ORG_ID,
+                           'external_id': self.external_id,
+                           'discipline': self.discipline,
                            'study_plan': self.study_plan,
                            'student': self.student,
                            'mark_type': self.mark_type,
                            'mark_value': int(self.mark_value),
-                           'semester': int(self.semester),
-                           'external_id': self.external_id
+                           'semester': int(self.semester)
                            })
 
     @staticmethod

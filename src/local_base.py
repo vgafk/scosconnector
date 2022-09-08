@@ -2,13 +2,9 @@ import sqlite3
 from os.path import exists
 from loguru import logger
 
-from scos_units import ScosUnit
+from scos_units import ScosUnit, data_classes
 from settings import local_base_path
 from tables import tables, update_trigger_text
-
-
-# def to_str(val):
-#     return '' if val is None else str(val)
 
 
 class SQL:
@@ -43,7 +39,9 @@ class SQL:
 def insert(unit: ScosUnit):
     with SQL() as sql:
         columns = ','.join(unit.__dict__.keys())
+        # данные могут быть пустыми, приводим их к строке
         values = '"' + '","'.join(list(map(str, unit.__dict__.values()))) + '"'
+
         query = f'INSERT INTO {unit.get_table()}({columns}) ' \
                 f'VALUES({values});'
         logger.debug(query)
@@ -75,6 +73,20 @@ def create_base():
             logger.info(f'Создана таблица {name}')
             sql.execute(update_trigger_text.replace('%name', name))
             logger.info(f'Создан триггер обновления для {name}')
+
+
+def get_all_updated_data():
+    all_updated_data = []
+    # all_updated_data.extend(get_updated_data('educational_programs'))
+    # all_updated_data.extend(get_updated_data('study_plans'))
+    # all_updated_data.extend(get_updated_data('disciplines'))
+    # у students из list_from_json Возвращается два списка, потому берем первый
+    # all_updated_data.extend(data_classes['students'].list_from_json(get_updated_data('students'))[0])
+    # all_updated_data.extend(get_updated_data('contingent_flows'))
+    # all_updated_data.extend(get_updated_data('marks'))
+    all_updated_data.extend(data_classes['marks'].list_from_json(get_updated_data('marks')))
+
+    return all_updated_data
 
 
 def get_updated_data(table: str):
