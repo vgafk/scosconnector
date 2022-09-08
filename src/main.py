@@ -13,10 +13,15 @@ def update_data_in_scos():
     scos_connector.update_data(local_updated_data)
 
 
+def delete_data_from_scos():
+    local_deleted_data = local_base.get_all_deleted_data()
+    scos_connector.delete_data(local_deleted_data)
+
+
 if __name__ == "__main__":
     if not local_base.base_exist():
         local_base.create_base()
         get_all_data_from_scos()
 
+    # delete_data_from_scos()
     update_data_in_scos()
-

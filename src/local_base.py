@@ -81,10 +81,10 @@ def get_all_updated_data():
     # all_updated_data.extend(get_updated_data('study_plans'))
     # all_updated_data.extend(get_updated_data('disciplines'))
     # у students из list_from_json Возвращается два списка, потому берем первый
-    # all_updated_data.extend(data_classes['students'].list_from_json(get_updated_data('students'))[0])
+    all_updated_data.extend(data_classes['students'].list_from_json(get_updated_data('students'))[0])
     # all_updated_data.extend(get_updated_data('contingent_flows'))
     # all_updated_data.extend(get_updated_data('marks'))
-    all_updated_data.extend(data_classes['marks'].list_from_json(get_updated_data('marks')))
+    # all_updated_data.extend(data_classes['marks'].list_from_json(get_updated_data('marks')))
 
     return all_updated_data
 
@@ -94,3 +94,22 @@ def get_updated_data(table: str):
         query = f"SELECT * FROM {table} WHERE last_update > last_scos_update"
         return sql.get_dict(query)
 
+
+def get_all_deleted_data():
+    all_deleted_data = []
+    # all_deleted_data.extend(get_deleted_data('educational_programs'))
+    # all_deleted_data.extend(get_deleted_data('study_plans'))
+    # all_deleted_data.extend(data_classes['disciplines'].list_from_json(get_deleted_data('disciplines')))
+    # у students из list_from_json Возвращается два списка, потому берем первый
+    # all_deleted_data.extend(data_classes['students'].list_from_json(get_deleted_data('students'))[0])
+    # all_deleted_data.extend(get_deleted_data('contingent_flows'))
+    # all_deleted_data.extend(get_deleted_data('marks'))
+    # all_deleted_data.extend(data_classes['marks'].list_from_json(get_deleted_data('marks')))
+
+    return all_deleted_data
+
+
+def get_deleted_data(table: str):
+    with SQL() as sql:
+        query = f"SELECT * FROM {table} WHERE deleted IS NOT NULL AND deleted_scos IS NULL"
+        return sql.get_dict(query)

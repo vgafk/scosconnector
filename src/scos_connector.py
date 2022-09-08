@@ -103,6 +103,11 @@ def update_data(updated_data: [ScosUnit]):
 #     return request_row
 
 
+def delete_data(deleted_data: [ScosUnit]):
+    for unit in deleted_data:
+        send_delete_request(unit)
+
+
 def create_request_row(units: list, title: str):
     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
                       f'"{title}": {[ob.to_json() for ob in units]}}}'
@@ -123,9 +128,20 @@ def send_update_request(scos_unit: ScosUnit):
     body = scos_unit.to_json()
     url = endpoint_urls[scos_unit.get_table()] + '/' + scos_unit.id
     resp = requests.put(url, headers=headers, data=body)
-    logger.info(body)
     if resp.status_code not in API_codes['Success']:
-        logger.error(body)
-        logger.error(resp.text)
+        logger.error(f'Ошибка обновления из таблицы {scos_unit.get_table()} запросом: {body}')
+        logger.error(resp.status_code, resp.text)
+    else:
+        logger.info(f'обновление из таблицы {scos_unit.get_table()} запросом: {body}')
     return resp.status_code, resp.text
 
+
+def send_delete_request(scos_unit:  ScosUnit):
+    url = endpoint_urls[scos_unit.get_table()] + '/' + scos_unit.id
+    resp = requests.delete(url, headers=headers)
+    if resp.status_code not in API_codes['Success']:
+        logger.info(f'Ошибка удаления из таблицы {scos_unit.get_table()} по url {url}')
+        logger.error(resp.status_code, resp.text)
+    else:
+        logger.info(f'Удаление из таблицы {scos_unit.get_table()} по url {url}')
+    return resp.status_code, resp.text
