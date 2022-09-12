@@ -1,4 +1,3 @@
-import csv
 import json
 from datetime import datetime
 from settings import ORG_ID
@@ -20,6 +19,7 @@ from loguru import logger
 
 class ScosUnit:
     table_name: str
+    base_id: int
 
     @classmethod
     def from_dict(cls, data):
@@ -43,19 +43,22 @@ class ScosUnit:
     def id(self):
         return self.id
 
+    def get_values(self):
+        pass
+
 
 class EducationalProgram(ScosUnit):
     table_name = 'educational_programs'
 
     def __init__(self, **kwargs):
-        self.external_id = kwargs['external_id']
-        self.id = kwargs['id']
+        self.external_id = kwargs.get('external_id', '')
+        self.id = kwargs.get('id', '')
         self.title = kwargs['title']
         self.direction = kwargs['direction']
         self.code_direction = kwargs['code_direction']
         self.start_year = kwargs['start_year']
         self.end_year = kwargs['end_year']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.base_id = kwargs.get('base_id', '')
 
     def to_json(self):
         return json.dumps({
@@ -74,13 +77,22 @@ class EducationalProgram(ScosUnit):
             unit_list.append(EducationalProgram(**data))
         return unit_list
 
+    def get_values(self):
+        columns = []
+        values = []
+        for key, val in self.__dict__.items():
+            # if key not in ['']:
+            columns.append(key)
+            values.append(str(val))
+        return columns, values
+
 
 class StudyPlans(ScosUnit):
     table_name = 'study_plans'
 
     def __init__(self, **kwargs):
-        self.external_id = kwargs['external_id']
-        self.id = kwargs['id']
+        self.external_id = kwargs.get('external_id', '')
+        self.id = kwargs.get('id', '')
         self.title = kwargs['title']
         self.direction = kwargs['direction']
         self.code_direction = kwargs['code_direction']
@@ -88,7 +100,7 @@ class StudyPlans(ScosUnit):
         self.end_year = kwargs['end_year']
         self.education_form = kwargs['education_form']
         self.educational_program_id = kwargs['educational_program_id']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.base_id = kwargs.get('base_id', '')
 
     def to_json(self):
         return json.dumps({
@@ -111,15 +123,25 @@ class StudyPlans(ScosUnit):
 
         return sp_list
 
+    def get_values(self):
+        columns = []
+        values = []
+        for key, val in self.__dict__.items():
+            # if key not in ['study_plan']:
+            columns.append(key)
+            values.append(str(val))
+        return columns, values
+
 
 class Disciplines(ScosUnit):
     table_name = 'disciplines'
 
     def __init__(self, **kwargs):
-        self.external_id = kwargs['external_id']
+        self.external_id = kwargs.get('external_id', '')
+        self.id = kwargs.get('id', '')
         self.title = kwargs['title']
-        self.id = kwargs['id']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.base_id = kwargs.get('base_id', '')
+        self.study_plan = kwargs.get('study_plan', '')
 
     def to_json(self):
         return json.dumps({
@@ -135,6 +157,15 @@ class Disciplines(ScosUnit):
             unit_list.append(Disciplines(**data))
         return unit_list
 
+    def get_values(self):
+        columns = []
+        values = []
+        for key, val in self.__dict__.items():
+            if key not in ['study_plan']:
+                columns.append(key)
+                values.append(str(val))
+        return columns, values
+
 
 class StudyPlanDisciplines(ScosUnit):
     table_name = 'study_plan_disciplines'
@@ -143,7 +174,6 @@ class StudyPlanDisciplines(ScosUnit):
         self.study_plan = kwargs['study_plan']
         self.discipline = kwargs['discipline']
         self.semester = kwargs['semester']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({
@@ -156,9 +186,19 @@ class StudyPlanDisciplines(ScosUnit):
     def list_from_json(data_list, unit_id=''):
         unit_list = []
         for data in data_list:
-            unit_list.append(StudyPlanDisciplines(study_plan=unit_id, **data))
+            if unit_id:
+                data.study_plan = unit_id
+            unit_list.append(StudyPlanDisciplines(**data))
         return unit_list
 
+    def get_values(self):
+        columns = []
+        values = []
+        for key, val in self.__dict__.items():
+            if key not in ['']:
+                columns.append(key)
+                values.append(str(val))
+        return columns, values
 
 class Students(ScosUnit):
     table_name = 'students'
@@ -175,7 +215,6 @@ class Students(ScosUnit):
         self.email = kwargs['email']
         self.phone = kwargs['phone']
         self.study_year = kwargs['study_year']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({'organization_id': ORG_ID,
@@ -192,7 +231,7 @@ class Students(ScosUnit):
                            })
 
     @staticmethod
-    def list_from_json(data_list, unit_id=''):
+    def list_from_json(data_list, unit_id=''):          # TODO Убрать возврат двух элементов
         unit_list = []
         sp_list = []
         for data in data_list:
@@ -201,7 +240,7 @@ class Students(ScosUnit):
                 for sp in data['study_plans']:
                     sp_list.append(StudyPlanStudents(study_plan=sp['id'], student=data['id']))
             except KeyError as k_error:          # При создании экземпляра из данных выбранных из локальной базы,
-                if k_error != 'study_plans':     # данные приходят без вложенного study_plans, для избежания ошибки
+                if k_error.__str__() != 'study_plans':    # данные приходят без вложенного study_plans, для избежания ошибки
                     logger.error(f'Нет ключа {k_error}')  # игнорим это исключение
         return unit_list, sp_list
 
@@ -212,7 +251,6 @@ class StudyPlanStudents(ScosUnit):
     def __init__(self, study_plan, student):
         self.study_plan = study_plan
         self.student = student
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({'study_plan': self.study_plan,
@@ -232,7 +270,6 @@ class ContingentFlow(ScosUnit):
         self.form_fin = kwargs['form_fin']
         self.details = kwargs['details']
         self.id = kwargs['id']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     @staticmethod
     def list_from_json(data_list, unit_id=''):
@@ -248,7 +285,7 @@ class Marks(ScosUnit):
     def __init__(self, **kwargs):
         self.external_id = kwargs['external_id']
         self.id = kwargs['id']
-        try:
+        try:            # TODO Переделать на один try
             self.discipline = kwargs['discipline']['external_id']
         except TypeError:
             self.discipline = kwargs['discipline']
@@ -267,7 +304,6 @@ class Marks(ScosUnit):
             self.mark_value = kwargs['mark_value']
 
         self.semester = kwargs['semester']
-        self.last_scos_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def to_json(self):
         return json.dumps({'organization_id': ORG_ID,
@@ -288,6 +324,7 @@ class Marks(ScosUnit):
         return unit_list
 
 
+# Порядок имеет значение
 data_classes = {
     'educational_programs': EducationalProgram,
     'study_plans': StudyPlans,

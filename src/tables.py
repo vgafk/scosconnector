@@ -1,5 +1,6 @@
 tables = {
     'educational_programs': '''CREATE TABLE "educational_programs" (
+                "base_id" INTEGER NOT NULL,  
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "title"	VARCHAR(256) NOT NULL,
@@ -10,8 +11,10 @@ tables = {
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id"));''',
     'study_plans': '''CREATE TABLE "study_plans" (
+                "base_id" INTEGER NOT NULL, 
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "title"	VARCHAR(256) NOT NULL,
@@ -24,24 +27,30 @@ tables = {
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id"));''',
     'disciplines': '''CREATE TABLE "disciplines" (
+                "base_id" INTEGER NOT NULL, 
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "title"	VARCHAR(256) NOT NULL,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,               
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id"));''',
     'study_plan_disciplines': '''CREATE TABLE "study_plan_disciplines" (
-                "study_plan" INTEGER NOT NULL,
-                "discipline" INTEGER NOT NULL,
+                "base_id" INTEGER NOT NULL,
+                "study_plan" VARCHAR(256) NOT NULL,
+                "discipline" VARCHAR(256) NOT NULL,
                 "semester" INTEGER,
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id"));''',
     'students': '''CREATE TABLE "students" (
+                "base_id" INTEGER NOT NULL,
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "surname"	VARCHAR(256) NOT NULL,
@@ -56,16 +65,20 @@ tables = {
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id"));''',
     'study_plan_students': '''CREATE TABLE "study_plan_students" (
+                "base_id" INTEGER NOT NULL,
                 "external_id" VARCHAR(256),
                 "study_plan" VARCHAR(256),
                 "student" VARCHAR(256),
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id" AUTOINCREMENT));''',
     'contingent_flows': '''CREATE TABLE "contingent_flows" (
+                "base_id" INTEGER NOT NULL,
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "student" INTEGER NOT NULL,
@@ -79,8 +92,10 @@ tables = {
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);''',
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id" AUTOINCREMENT));''',
     'marks': '''CREATE TABLE "marks" (
+                "base_id" INTEGER NOT NULL,
                 "external_id" VARCHAR(256),
                 "id" VARCHAR(256),
                 "discipline" INTEGER NOT NULL,
@@ -92,8 +107,8 @@ tables = {
                 "last_update" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
                 "last_scos_update" DATETIME,
                 "deleted" DATETIME,
-                "deleted_scos" DATETIME);'''#,
-                #PRIMARY KEY("external_id" AUTOINCREMENT));'''
+                "deleted_scos" DATETIME,
+                PRIMARY KEY("base_id" AUTOINCREMENT));'''
 }
 
 update_trigger_text = '''CREATE TRIGGER %name_last_update AFTER UPDATE ON %name

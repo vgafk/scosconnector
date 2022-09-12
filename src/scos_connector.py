@@ -39,7 +39,7 @@ def get_all_data_from_scos():
     study_plans = get_scos_units_list('study_plans')
     all_data.extend(study_plans)
     all_data.extend(get_scos_units_list('disciplines'))
-    students, study_plan_students = get_scos_units_list('students')
+    students, study_plan_students = get_scos_units_list('students')     # TODO сделать по отдельности
     all_data.extend(students)
     all_data.extend(study_plan_students)
     all_data.extend(get_scos_units_list('marks'))
@@ -130,7 +130,7 @@ def send_update_request(scos_unit: ScosUnit):
     resp = requests.put(url, headers=headers, data=body)
     if resp.status_code not in API_codes['Success']:
         logger.error(f'Ошибка обновления из таблицы {scos_unit.get_table()} запросом: {body}')
-        logger.error(resp.status_code, resp.text)
+        logger.error(str(resp.status_code), resp.text)
     else:
         logger.info(f'обновление из таблицы {scos_unit.get_table()} запросом: {body}')
     return resp.status_code, resp.text
@@ -141,7 +141,7 @@ def send_delete_request(scos_unit:  ScosUnit):
     resp = requests.delete(url, headers=headers)
     if resp.status_code not in API_codes['Success']:
         logger.info(f'Ошибка удаления из таблицы {scos_unit.get_table()} по url {url}')
-        logger.error(resp.status_code, resp.text)
+        logger.error(str(resp.status_code), resp.text)
     else:
         logger.info(f'Удаление из таблицы {scos_unit.get_table()} по url {url}')
     return resp.status_code, resp.text

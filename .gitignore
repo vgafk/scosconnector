@@ -131,6 +131,10 @@ dmypy.json
 # Создаваемая база данных
 src/cache.db
 
+# Фиректория для файлов csv
+csv_files/
+csv/
+
 # PyCharm settings
 .idea
 
