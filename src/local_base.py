@@ -1,167 +1,186 @@
-import sqlite3
+from datetime import datetime
 from os.path import exists
-from loguru import logger
 
-from scos_units import ScosUnit, data_classes
 from settings import LOCAL_BASE_PATH
-from tables import tables, update_trigger_text
-from functools import singledispatch
+from sqlalchemy import create_engine, Column, String, Integer, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
+from uuid import uuid4
+from exceptions import ClassNotExists
+
+engine = create_engine(f'sqlite:///{LOCAL_BASE_PATH}', echo=True)
+Base = declarative_base()
+Session = sessionmaker()
+session = Session(bind=engine)
 
 
-class SQL:
-    def __enter__(self):
-        self.conn = sqlite3.connect(LOCAL_BASE_PATH)
-        self.cur = self.conn.cursor()
-        return self
+class EducationalProgram(Base):
+    __tablename__ = 'educational_programs'
+    id = Column(Integer, primary_key=True)
+    base_id = Column(Integer)
+    external_id = Column(String, nullable=False)
+    scos_id = Column(String)
+    title = Column(String, nullable=False)
+    direction = Column(String, nullable=False)
+    code_direction = Column(String, nullable=False)
+    start_year = Column(Integer, nullable=False)
+    end_year = Column(Integer, nullable=False)
+    last_update = Column(DateTime, nullable=False, default=datetime.now())
+    last_scos_update = Column(DateTime)
+    deleted = Column(DateTime)
+    deleted_scos = Column(DateTime)
 
-    def __exit__(self, type, value, traceback):
-        self.cur.close()
-        self.conn.close()
+    def __init__(self, **kwargs):
+        self.base_id = kwargs.get('base_id', 0)
+        self.external_id = kwargs.get('external_id', str(uuid4()))
+        self.scos_id = kwargs.get('scos_id', '')
+        self.title = kwargs['title']
+        self.direction = kwargs['direction']
+        self.code_direction = kwargs['code_direction']
+        self.start_year = kwargs['start_year']
+        self.end_year = kwargs['end_year']
 
-    def get_dict(self, query):
-        records = []
-        try:
-            values = self.cur.execute(query).fetchall()
-            column_names = [column[0] for column in self.cur.description]
-            for value in values:
-                records.append(dict(zip(column_names, value)))
-        except sqlite3.Error as error:
-            logger.error(f'Ошибка локальной базы: {error}')
-        return records
-
-    def execute(self, query):
-        try:
-            self.cur.execute(query)
-            self.conn.commit()
-        except sqlite3.Error as error:
-            logger.error(f'Ошибка локальной базы: {error}')
-
-
-@singledispatch
-def insert(val):
-    pass
-
-
-@insert.register
-def __insert_one(unit: ScosUnit):
-    with SQL() as sql:
-        columns = ",".join(unit.get_values()[0])
-        values = '"' + '","'.join(unit.get_values()[1]) + '"'
-        query = f'INSERT INTO {unit.get_table()}({columns}) ' \
-                f'VALUES({values});'
-        logger.debug(query)
-        sql.execute(query)
-        logger.info(f'Запись в {unit.get_table()}')
+    def update_data(self):
+        return {
+            'title': self.title,
+            'direction': self.direction,
+            'code_direction': self.code_direction,
+            'start_year': self.start_year,
+            'end_year': self.end_year,
+            'last_update': datetime.now(),
+            'scos_id': self.scos_id
+            }
 
 
-@insert.register
-def __insert_list(units: list):
-    for unit in units:
-        __insert_one(unit)
+class StudyPlans(Base):
+    __tablename__ = 'study_plans'
+    id = Column(Integer, primary_key=True)
+    base_id = Column(Integer)
+    external_id = Column(String, nullable=False)
+    scos_id = Column(String)
+    title = Column(String)
+    education_form = Column(String)
+    educational_program_id = Column(Integer)
+    start_year = Column(Integer, nullable=False)
+    end_year = Column(Integer, nullable=False)
+    last_update = Column(DateTime, nullable=False, default=datetime.now())
+    last_scos_update = Column(DateTime)
+    deleted = Column(DateTime)
+    deleted_scos = Column(DateTime)
+
+    def __init__(self, **kwargs):
+        self.base_id = kwargs.get('base_id', '')
+        self.external_id = kwargs.get('external_id', str(uuid4()))
+        self.scos_id = kwargs.get('scos_id', '')
+        self.title = kwargs['title']
+        self.education_form = kwargs['education_form']
+        self.educational_program_id = kwargs['educational_program_id']
+        self.start_year = kwargs['start_year']
+        self.end_year = kwargs['end_year']
+
+    def update_data(self):
+        return {
+            'title': self.title,
+            'start_year': self.start_year,
+            'education_form': self.education_form,
+            'end_year': self.end_year,
+            'last_update': datetime.now()
+        }
 
 
-@singledispatch
-def delete(val):
-    pass
+class Disciplines(Base):
+    __tablename__ = 'disciplines'
+    id = Column(Integer, primary_key=True)
+    base_id = Column(Integer)
+    external_id = Column(String, nullable=False)
+    scos_id = Column(String)
+    title = Column(String)
+    last_update = Column(DateTime, nullable=False, default=datetime.now())
+    last_scos_update = Column(DateTime)
+    deleted = Column(DateTime)
+    deleted_scos = Column(DateTime)
+
+    def __init__(self, **kwargs):
+        self.base_id = kwargs.get('base_id', '')
+        self.external_id = kwargs.get('external_id', str(uuid4()))
+        self.scos_id = kwargs.get('scos_id', '')
+        self.title = kwargs['title']
+
+    def update_data(self):
+        return {
+            'title': self.title
+        }
 
 
-@delete.register
-def __delete_list(units: list):
-    for unit in units:
-        __delete_one(unit)
+class StudyPlanDisciplines(Base):
+    __tablename__ = 'study_plan_disciplines'
+    id = Column(Integer, primary_key=True)
+    base_id = Column(Integer)
+    study_plan = Column(Integer)
+    discipline = Column(Integer)
+    semester = Column(Integer)
+    last_update = Column(DateTime, nullable=False, default=datetime.now())
+    last_scos_update = Column(DateTime)
+    deleted = Column(DateTime)
+    deleted_scos = Column(DateTime)
+
+    def __init__(self, **kwargs):
+        self.base_id = kwargs.get('base_id', '')
+        self.study_plan = kwargs['study_plan']
+        self.discipline = kwargs['discipline']
+        self.semester = kwargs['semester']
 
 
-@delete.register
-def __delete_one(unit: ScosUnit):
-    with SQL() as sql:
-        query = f'DELETE FROM {unit.get_table()} WHERE base_id = {unit.base_id}'
-        sql.execute(query)
-        logger.info(f'удаление из таблицы {unit.get_table()}')
+def check_base(create: bool = False):
+    """ Проверка существования файла базы данных
 
-
-@singledispatch
-def update(val):
-    pass
-
-
-@update.register
-def __update_list(units: list):
-    for unit in units:
-        __update_one(unit)
-
-
-@update.register
-def __update_one(unit: ScosUnit):
-    with SQL() as sql:
-        params = [f'{name} = "{val}"' for name, val in unit.__dict__.items()]
-        query = f'UPDATE {unit.get_table()} SET {", ".join(params)} ' \
-                f'WHERE external_id = "{unit.__dict__["external_id"]}"'
-        sql.execute(query)
-        logger.info(f'Обновление таблицы {unit.get_table()}')
-
-
-def base_exist():
+    :param create: Создать базу при отсутствии
+    :return: Наличие файла базы данных
+    """
     if not exists(LOCAL_BASE_PATH):
-        logger.info('Файл базы не обнаружен, создаем новый...')
-        return False
+        if create:
+            create_base()
+        else:
+            return False
     else:
         return True
 
 
 def create_base():
-    with SQL() as sql:
-        for name, table in tables.items():
-            sql.execute(table)
-            logger.info(f'Создана таблица {name}')
-            sql.execute(update_trigger_text.replace('%name', name))
-            logger.info(f'Создан триггер обновления для {name}')
+    """Создаем базу данных"""
+    Base.metadata.create_all(bind=engine)
 
 
-def get_all_updated_data():
-    all_updated_data = []
-    # all_updated_data.extend(get_updated_data('educational_programs'))
-    # all_updated_data.extend(get_updated_data('study_plans'))
-    # all_updated_data.extend(get_updated_data('disciplines'))
-    # у students из list_from_json Возвращается два списка, потому берем первый
-    # all_updated_data.extend(data_classes['students'].list_from_json(get_updated_data('students'))[0]) # TODO убрать список
-    # all_updated_data.extend(get_updated_data('contingent_flows'))
-    # all_updated_data.extend(get_updated_data('marks'))
-    # all_updated_data.extend(data_classes['marks'].list_from_json(get_updated_data('marks')))
-
-    return all_updated_data
-
-
-def get_updated_data(table: str):
-    with SQL() as sql:
-        query = f"SELECT * FROM {table} WHERE last_update > last_scos_update"
-        return sql.get_dict(query)
+def get_unit_class(unit_name: str):
+    match unit_name:
+        case 'educational_programs':
+            return EducationalProgram
+        case 'study_plans':
+            return StudyPlans
+        case 'disciplines':
+            return Disciplines
+        case 'study_plan_disciplines':
+            return StudyPlanDisciplines
+        case _:
+            raise ClassNotExists
 
 
-def get_all_deleted_data():
-    all_deleted_data = []
-    all_deleted_data.extend(data_classes['educational_programs'].
-                            list_from_json(get_deleted_data('educational_programs')))
-    all_deleted_data.extend(data_classes['study_plans'].list_from_json(get_deleted_data('study_plans')))
-    all_deleted_data.extend(data_classes['disciplines'].list_from_json(get_deleted_data('disciplines')))
-    # у students из list_from_json Возвращается два списка, потому берем первый
-    all_deleted_data.extend(data_classes['students'].list_from_json(get_deleted_data('students'))[0]) # TODO убрать список
-    # all_deleted_data.extend(get_deleted_data('contingent_flows'))
-    all_deleted_data.extend(data_classes['marks'].list_from_json(get_deleted_data('marks')))
-
-    return all_deleted_data
+def add_to_base(units: list):
+    session.add_all(units)
+    session.commit()
 
 
-def get_deleted_data(table: str):
-    with SQL() as sql:
-        query = f"SELECT * FROM {table} WHERE deleted IS NOT NULL AND deleted_scos IS NULL"
-        return sql.get_dict(query)
+def update_in_base(units: list):
+    for unit in units:
+        base_unit_type = type(unit)
+        base_unit = session.query(base_unit_type).filter_by(base_id=unit.base_id)
+        base_unit.update(unit.update_data())
+        session.commit()
+
+# ep = local_base.session.query(local_base.EducationalProgram).\
+    #     filter(local_base.EducationalProgram.base_id == 1).\
+    #     update(nep.update_data())
+    # print(nep.update_data())
 
 
-def get_external_id(table: str, base_id):
-    with SQL() as sql:
-        query = f"SELECT external_id FROM {table} WHERE base_id = {base_id}"
-        value = sql.get_dict(query)
-        if value:
-            external_id = value[0]['external_id']
-            return external_id
-
+def delete_from_base(units: list):
+    pass

@@ -140,3 +140,7 @@ csv/
 
 # temp files
 .~lock*
+
+# Visual Paradigm temp files
+*.vpp.bak*
+*.vpp.lck*

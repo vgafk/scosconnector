@@ -1,7 +1,7 @@
 from scos_units import ScosUnit, data_classes
 from functools import singledispatch
 import uuid
-from local_base import get_external_id
+from local_base_old import get_external_id
 
 
 @singledispatch
