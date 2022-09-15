@@ -115,3 +115,4 @@ update_trigger_text = '''CREATE TRIGGER %name_last_update AFTER UPDATE ON %name
                     BEGIN
                     UPDATE %name SET last_update = datetime('now', 'localtime') WHERE id = new.id;
                     END;        '''
+

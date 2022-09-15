@@ -24,8 +24,8 @@ def create_csv_dir():
     """Создание директории для csv файлов"""
     try:
         os.mkdir(CSV_FILE_PATH)
-    except OSError:
-        logger.error(f'Ошибка создания директории для csv файлов: {CSV_FILE_PATH}')
+    except OSError as ex:
+        logger.error(f'Ошибка создания директории для csv файлов {CSV_FILE_PATH}: {ex}')
     else:
         logger.info(f'Создана директория для csv файлов: {CSV_FILE_PATH}')
 
@@ -56,7 +56,6 @@ def read_file(file: str) -> list[local_base.Base]:
                 unit = unit_class(**unit_data)
                 units_list.append(unit)
 
-        # os.remove(file)
     except ClassNotExists:
         logger.error(f'Файл {file} имеет не верное название, название файла должно соответствовать названию класса')
     except TypeError:
@@ -65,6 +64,11 @@ def read_file(file: str) -> list[local_base.Base]:
         logger.error(f'Не удалось cформировать данные из файла {file}: {er}')
     finally:
         return units_list
+
+
+def clear_scv_directory():
+    for file in os.scandir(CSV_FILE_PATH):
+        os.remove(file.path)
 
 
 if __name__ == '__main__':

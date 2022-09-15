@@ -1,41 +1,32 @@
-from os.path import exists
-
 import local_base
-# import scos_connector
+import scos_connector
 import csv_reader
-from messenger import send_message
+from loguru import logger
+from exceptions import SCOSAccessError, SCOSAddError
+scos_error_count = 0
 
-# from normalizer import normalize
 
-# def get_all_data_from_scos():
-#     all_scos_data = scos_connector.get_all_data_from_scos()
-#     # for unit in all_scos_data:
-#     local_base.insert(all_scos_data)
-#
-#
-# def update_data_in_scos():
-#     local_updated_data = local_base.get_all_updated_data()
-#     scos_connector.update_data(local_updated_data)
-#
-#
-# def delete_data_from_scos():
-#     local_deleted_data = local_base.get_all_deleted_data()
-#     scos_connector.delete_data(local_deleted_data)
-#
-#
-# def set_data_in_local_base():
-#     add_units_list, update_units_list, delete_units_list = file_reader.read_all_files()
-#     normalize(add_units_list)
-#     normalize(update_units_list)
-#     local_base.insert(add_units_list)
-#     local_base.update(update_units_list)
-#     local_base.delete(delete_units_list)
+def send_data_to_scos():
+    try:
+        scos_connector.check_connection()
+        new_units_list = local_base.get_new_units_list()
+        for new_unit in new_units_list:
+            scos_connector.add_data_to_scos(new_unit)
+            local_base.commit()
+    except SCOSAccessError as ex:
+        logger.error(ex)
+    except SCOSAddError as ex:
+        logger.error(ex)
 
 
 if __name__ == "__main__":
-    local_base.check_base(create=True)
+    # try:
+        local_base.check_base(create=True)
 
-    csv_reader.check_csv_dir(create=True)
-    csv_reader.read_files()
+        csv_reader.check_csv_dir(create=True)
+        csv_reader.read_files()
 
-    # set_data_in_local_base()
+        send_data_to_scos()
+        csv_reader.clear_scv_directory()
+    # except Exception as ex:
+    #     logger.error(f'большая ошибка: {ex}')

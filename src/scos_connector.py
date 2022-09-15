@@ -1,20 +1,65 @@
+import json
+from datetime import datetime
+
 from loguru import logger
 import requests
-#
-#
-import local_base
 import settings
-from settings import CHECK_CONNECTION   #, endpoint_urls, API_codes
-# from scos_units import ScosUnit, data_classes
+from exceptions import SCOSAccessError, SCOSAddError
 
 headers = {'Content-Type': 'application/json', 'X-CN-UUID': settings.X_CN_UUID}
 
+# Общий формат url
+API_URL = 'https://test.online.edu.ru/'  # тестовый контур
+# API_URL = 'https://online.edu.ru/api/'     # боевой контур
+API_URL_V1 = API_URL + 'api/v1/'
+API_URL_V2 = API_URL + 'vam/api/v2/'
+
+# Конкретные endpoints
+# Название параметра и url могут отличаться, например study_plan_disciplines без s в plan
+endpoint_urls = {
+    'check_connection': API_URL_V1 + 'connection/check',      # Проверка подключения
+    'educational_programs': API_URL_V2 + 'educational_programs',
+    'study_plans': API_URL_V2 + 'study_plans',
+    'disciplines': API_URL_V2 + 'disciplines',
+    'study_plan_disciplines': API_URL_V2 + 'study_plans_disciplines',
+    'students': API_URL_V2 + 'students',
+    'study_plan_students': API_URL_V2 + 'study_plans_students',
+    'contingent_flows': API_URL_V2 + 'contingent_flows',
+    'marks': API_URL_V2 + 'marks'
+}
+
 
 def check_connection():
-    resp = requests.get(CHECK_CONNECTION, headers=headers)
-#     return resp.status_code, resp.text
-#
-#
+    resp = requests.get(endpoint_urls['check_connection'], headers=headers)
+    if resp.status_code != 200:
+        raise SCOSAccessError(f'Сервер СЦОС недоступен: {resp.text}')
+
+
+def create_request_row(unit) -> str:
+    request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
+                  f'"{unit.__tablename__}": [{unit.to_json()}]}}'
+    return request_row
+
+
+def add_data_to_scos(unit):
+    body = create_request_row(unit)
+    resp = requests.post(endpoint_urls[unit.__tablename__], headers=headers, data=body)
+
+    if resp.status_code != 201:
+        raise SCOSAddError(f'Ошибка внесения данных в СЦОС:\n body = {body}\n '
+                           f'url = {endpoint_urls[unit.__tablename__]}\n '
+                           f'error = {resp.text}')
+    resp_json = resp.json()['results'][0]
+    scos_id = resp_json['id']
+    if scos_id is None:
+        raise SCOSAddError(f'Ошибка внесения данных в СЦОС:\n body = {body}\n '
+                           f"uploadStatusType = {resp_json['uploadStatusType']}, "
+                           f"additional_info = {resp_json['additional_info']}")
+    unit.scos_id = scos_id
+    unit.last_scos_update = datetime.now()
+    return resp.status_code, resp.text
+
+
 # def get_data_from_scos(data_type: str, unit_id: str = ''):
 #     page = 0
 #     last_page = 1
