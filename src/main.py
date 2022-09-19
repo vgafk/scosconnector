@@ -20,7 +20,7 @@ def send_data_to_scos():
 
 
 if __name__ == "__main__":
-    # try:
+    try:
         local_base.check_base(create=True)
 
         csv_reader.check_csv_dir(create=True)
@@ -28,5 +28,5 @@ if __name__ == "__main__":
 
         send_data_to_scos()
         csv_reader.clear_scv_directory()
-    # except Exception as ex:
-    #     logger.error(f'большая ошибка: {ex}')
+    except Exception as ex:
+        logger.error(f'большая ошибка: {ex}')

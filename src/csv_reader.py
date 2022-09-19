@@ -73,21 +73,3 @@ def clear_scv_directory():
 
 if __name__ == '__main__':
     read_files()
-
-    # nep = local_base.EducationalProgram(id=1,
-    #                                    base_id=1,
-    #                                    title='Психология и социальная педагогика',
-    #                                    direction='Психолого-педагогическое образование',
-    #                                    code_direction='44.03.02',
-    #                                    start_year=2022,
-    #                                    end_year=2026)
-
-# local_base.session.add(ep)
-# local_base.session.commit()
-#
-    # ep = local_base.session.query(local_base.EducationalProgram).\
-    #     filter(local_base.EducationalProgram.base_id == 1).\
-    #     update(nep.update_data())
-    # print(nep.update_data())
-    # local_base.session.commit()
-    # print(ep[0])

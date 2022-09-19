@@ -29,6 +29,10 @@ endpoint_urls = {
 }
 
 
+# def get_enfpoint_url(type: str, unit_scos_id, parent_scos_id):
+#     pass
+#
+
 def check_connection():
     resp = requests.get(endpoint_urls['check_connection'], headers=headers)
     if resp.status_code != 200:

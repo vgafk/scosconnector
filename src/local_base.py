@@ -26,9 +26,9 @@ class EducationalProgram(Base):
     start_year = Column(Integer, nullable=False)
     end_year = Column(Integer, nullable=False)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
     study_plans = relationship("StudyPlan", backref="educational_program")
 
     def __init__(self, **kwargs):
@@ -74,11 +74,12 @@ class StudyPlan(Base):
     start_year = Column(Integer, nullable=False)
     end_year = Column(Integer, nullable=False)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
     study_plan_disciplines = relationship("StudyPlanDisciplines", backref="study_plan")
     study_plan_student = relationship("StudyPlanStudents", backref="study_plan")
+    marks = relationship("Marks", backref="study_plan")
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', None)
@@ -121,10 +122,11 @@ class Discipline(Base):
     scos_id = Column(String)
     title = Column(String)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
     study_plan_disciplines = relationship("StudyPlanDisciplines", backref="discipline")
+    marks = relationship("Marks", backref="discipline")
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', None)
@@ -146,13 +148,14 @@ class Discipline(Base):
 
 class StudyPlanDisciplines(Base):
     __tablename__ = 'study_plan_disciplines'
+    id = Column(Integer, primary_key=True)
     study_plan_id = Column(ForeignKey("study_plans.id"), primary_key=True)
     discipline_id = Column(ForeignKey("disciplines.id"), primary_key=True)
     semester = Column(Integer)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', None)
@@ -182,11 +185,12 @@ class Student(Base):
     phone = Column(String)
     study_year = Column(Integer, nullable=False)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
     study_plan_disciplines = relationship("StudyPlanStudents", backref="student")
     contingent_flows = relationship("ContingentFlows", backref="student")
+    marks = relationship("Marks", backref="student")
 
     def __init__(self, **kwargs):
         self.id = kwargs['id']
@@ -232,9 +236,9 @@ class StudyPlanStudents(Base):
     study_plan_id = Column(ForeignKey("study_plans.id"), primary_key=True)
     student_id = Column(ForeignKey("students.id"), primary_key=True)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', None)
@@ -261,9 +265,9 @@ class ContingentFlows(Base):
     form_fin = Column(String)
     details = Column(String)
     last_update = Column(DateTime, nullable=False, default=datetime.now())
-    last_scos_update = Column(DateTime)
-    deleted = Column(DateTime)
-    deleted_scos = Column(DateTime)
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
 
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', None)
@@ -275,6 +279,7 @@ class ContingentFlows(Base):
         self.education_form = kwargs['education_form']
         self.form_fin = kwargs['form_fin']
         self.details = kwargs['details']
+
 
     def to_json(self):
         return json.dumps({
@@ -289,6 +294,50 @@ class ContingentFlows(Base):
         })
 
 
+class Marks(Base):
+    __tablename__ = 'marks'
+    id = Column(Integer, primary_key=True)
+    external_id = Column(String, nullable=False)
+    discipline_id = Column(ForeignKey("disciplines.id"))
+    study_plan_id = Column(ForeignKey("study_plans.id"))
+    student_id = Column(ForeignKey("students.id"))
+    mark_type = Column(String)
+    mark_value = Column(Integer)
+    semester = Column(Integer)
+    last_update = Column(DateTime, default=datetime.now())
+    last_scos_update = Column(DateTime, nullable=True)
+    deleted = Column(DateTime, nullable=True)
+    deleted_scos = Column(DateTime, nullable=True)
+
+    def __init__(self, **kwargs):
+        self.id = kwargs.get('id', None)
+        self.external_id = kwargs.get('external_id', str(uuid4()))
+        self.discipline_id = kwargs['discipline']
+        self.study_plan_id = kwargs['study_plan']
+        self.student_id = kwargs['student']
+        self.mark_type = kwargs['mark_type']
+        self.mark_value = kwargs['mark_value']
+        self.semester = kwargs['semester']
+
+    def update_data(self):
+        return {
+            'mark_type': dicts.marks_types[self.mark_type],
+            'mark_value': self.mark_value,
+            'semester': self.semester
+        }
+
+    def to_json(self):
+        return json.dumps({
+            'external_id': self.external_id,
+            'discipline': self.discipline.external_id,
+            'study_plan': self.study_plan.external_id,
+            'student': self.student.external_id,
+            'mark_type': dicts.marks_types[self.mark_type],
+            'mark_value': self.mark_value,
+            'semester': self.semester,
+        })
+
+
 unit_classes_list = {
     'educational_programs': EducationalProgram,
     'study_plans': StudyPlan,
@@ -296,7 +345,8 @@ unit_classes_list = {
     'study_plan_disciplines': StudyPlanDisciplines,
     'students': Student,
     'study_plan_students': StudyPlanStudents,
-    'contingent_flows': ContingentFlows
+    'contingent_flows': ContingentFlows,
+    'marks': Marks
 }
 
 

@@ -1,4 +1,4 @@
- # Форма обучения
+# Форма обучения
 education_form = {'Заочная': 'EXTRAMURAL', 'Очная': 'FULL_TIME','оОчнозаочная': 'PART_TIME',
                   'Сок.заочная': 'SHORT_EXTRAMURAL', 'Сок.очная': 'SHORT_FULL_TIME', 'Экстернат': 'EXTERNAL'}
 
@@ -8,5 +8,5 @@ flow_types = {'Зачисление': 'ENROLLMENT', 'Отчисление': 'DED
               'Академ': 'SABBATICAL_TAKING'}
 
 # Типы оценок
-marks_types = {'оценка': 'MARK', 'зачет': 'CREDIT', 'Дифференцированный зачет': 'DIF_CREDIT',
-               'Стобалльная оценка': 'HUNDRED_POINT'}
+marks_types = {'Оценка': 'MARK', 'Зачет': 'CREDIT', 'Диф.зачет': 'DIF_CREDIT',
+               '100оценка': 'HUNDRED_POINT'}
