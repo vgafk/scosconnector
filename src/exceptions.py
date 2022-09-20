@@ -8,3 +8,7 @@ class SCOSAccessError(Exception):
 
 class SCOSAddError(Exception):
     pass
+
+
+class OperationTypeError(Exception):
+    pass

@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from os.path import exists
 
-from settings import LOCAL_BASE_PATH
+from settings import LOCAL_BASE_PATH, ORG_ID
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Date
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from uuid import uuid4
@@ -48,12 +48,12 @@ class EducationalProgram(Base):
             'code_direction': self.code_direction,
             'start_year': self.start_year,
             'end_year': self.end_year,
-            'last_update': datetime.now(),
-            'scos_id': self.scos_id
+            'last_update': datetime.now()
             }
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'external_id': self.external_id,
             'title': self.title,
             'direction': self.direction,
@@ -104,6 +104,7 @@ class StudyPlan(Base):
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'external_id': self.external_id,
             'title': self.title,
             'direction': self.educational_program.direction,            # Объект educational_program
@@ -136,11 +137,13 @@ class Discipline(Base):
 
     def update_data(self):
         return {
-            'title': self.title
+            'title': self.title,
+            'last_update': datetime.now()
         }
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'external_id': self.external_id,
             'title': self.title
         })
@@ -165,6 +168,7 @@ class StudyPlanDisciplines(Base):
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'study_plan': self.study_plan.external_id,
             'discipline': self.discipline.external_id,
             'semester': self.semester
@@ -213,11 +217,13 @@ class Student(Base):
             'inn': self.inn,
             'email': self.email,
             'phone': self.phone,
-            'study_year':self.study_year
+            'study_year': self.study_year,
+            'last_update': datetime.now()
             }
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'external_id': self.external_id,
             'surname': self.surname,
             'name': self.name,
@@ -233,8 +239,8 @@ class Student(Base):
 class StudyPlanStudents(Base):
     __tablename__ = 'study_plan_students'
     id = Column(Integer, primary_key=True)
-    study_plan_id = Column(ForeignKey("study_plans.id"), primary_key=True)
-    student_id = Column(ForeignKey("students.id"), primary_key=True)
+    study_plan_id = Column(ForeignKey("study_plans.id"))
+    student_id = Column(ForeignKey("students.id"))
     last_update = Column(DateTime, nullable=False, default=datetime.now())
     last_scos_update = Column(DateTime, nullable=True)
     deleted = Column(DateTime, nullable=True)
@@ -247,6 +253,7 @@ class StudyPlanStudents(Base):
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'study_plan': self.study_plan.external_id,
             'student': self.student.external_id
         })
@@ -256,7 +263,7 @@ class ContingentFlows(Base):
     __tablename__ = 'contingent_flows'
     id = Column(Integer, primary_key=True)
     scos_id = Column(String)
-    student_id = Column(ForeignKey("students.id"), primary_key=True)
+    student_id = Column(ForeignKey("students.id"))
     contingent_flow = Column(String)
     flow_type = Column(String)
     date = Column(Date)
@@ -280,9 +287,22 @@ class ContingentFlows(Base):
         self.form_fin = kwargs['form_fin']
         self.details = kwargs['details']
 
+    def update_data(self):
+        return {
+            'student_id': self.student_id,
+            'contingent_flow': self.contingent_flow,
+            'flow_type': self.flow_type,
+            'date': self.date,
+            'faculty': self.faculty,
+            'education_form': self.education_form,
+            'form_fin': self.form_fin,
+            'details': self.details,
+            'last_update': datetime.now()
+        }
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'student': self.student.external_id,
             'contingent_flow': self.contingent_flow,
             'flow_type': dicts.flow_types[self.flow_type],
@@ -297,6 +317,7 @@ class ContingentFlows(Base):
 class Marks(Base):
     __tablename__ = 'marks'
     id = Column(Integer, primary_key=True)
+    scos_id = Column(String)
     external_id = Column(String, nullable=False)
     discipline_id = Column(ForeignKey("disciplines.id"))
     study_plan_id = Column(ForeignKey("study_plans.id"))
@@ -321,13 +342,15 @@ class Marks(Base):
 
     def update_data(self):
         return {
-            'mark_type': dicts.marks_types[self.mark_type],
+            'mark_type': self.mark_type,
             'mark_value': self.mark_value,
-            'semester': self.semester
+            'semester': self.semester,
+            'last_update': datetime.now()
         }
 
     def to_json(self):
         return json.dumps({
+            'organization_id': ORG_ID,
             'external_id': self.external_id,
             'discipline': self.discipline.external_id,
             'study_plan': self.study_plan.external_id,
@@ -381,19 +404,20 @@ def get_new_units_list():  # разобраться с join
     units = []
     for unit_class in unit_classes_list.values():
         units.extend(session.query(unit_class).filter(unit_class.last_scos_update.is_(None)).all())
-
-    # units.extend(session.query(StudyPlans).
-    #              join(EducationalProgram, StudyPlans.educational_program_id == EducationalProgram._id).
-    #              filter(StudyPlans.last_scos_update.is_(None)).all())
-    # for unit in unit_classes_list:
-        # unit_class = unit_classes_list[unit]
-    # units.extend()
     return units
 
 
 def add_to_base(units: list):
     session.add_all(units)
     session.commit()
+    pass
+
+
+def get_changed_units():
+    units = []
+    for unit_class in unit_classes_list.values():
+        units.extend(session.query(unit_class).filter(unit_class.last_scos_update < unit_class.last_update).all())
+    return units
 
 
 def update_in_base(units: list):

@@ -4,7 +4,7 @@ from datetime import datetime
 from loguru import logger
 import requests
 import settings
-from exceptions import SCOSAccessError, SCOSAddError
+from exceptions import SCOSAccessError, SCOSAddError, OperationTypeError
 
 headers = {'Content-Type': 'application/json', 'X-CN-UUID': settings.X_CN_UUID}
 
@@ -14,10 +14,11 @@ API_URL = 'https://test.online.edu.ru/'  # тестовый контур
 API_URL_V1 = API_URL + 'api/v1/'
 API_URL_V2 = API_URL + 'vam/api/v2/'
 
+CHECK_CONNECTION_URL = API_URL_V1 + 'connection/check'      # Проверка подключения
+
 # Конкретные endpoints
 # Название параметра и url могут отличаться, например study_plan_disciplines без s в plan
 endpoint_urls = {
-    'check_connection': API_URL_V1 + 'connection/check',      # Проверка подключения
     'educational_programs': API_URL_V2 + 'educational_programs',
     'study_plans': API_URL_V2 + 'study_plans',
     'disciplines': API_URL_V2 + 'disciplines',
@@ -29,37 +30,67 @@ endpoint_urls = {
 }
 
 
-# def get_enfpoint_url(type: str, unit_scos_id, parent_scos_id):
-#     pass
-#
+def get_endpoint_url(unit, action_type: str = 'add') -> str:
+    match action_type:
+        case 'add':
+            return endpoint_urls[unit.__tablename__]
+        case 'upd' | 'del':
+            if unit.__tablename__ == 'study_plan_disciplines':
+                return f"{endpoint_urls['study_plans']}/{unit.study_plans.external_id}/" \
+                       f"disciplines/{unit.disciplines.external_id}"
+            elif unit.__tablename__ == 'study_plan_students':
+                return f"{endpoint_urls['students']}/{unit.students.external_id}/" \
+                       f"study_plans/{unit.study_plans.external_id}"
+            else:
+                return f"{endpoint_urls[unit.__tablename__]}/{unit.scos_id}"
+        case 'load':
+            pass
+        case _:
+            raise OperationTypeError("Неизвестная операция, используйте 'add', 'upd' или 'del'")
+
 
 def check_connection():
-    resp = requests.get(endpoint_urls['check_connection'], headers=headers)
-    if resp.status_code != 200:
+    resp = requests.get(CHECK_CONNECTION_URL, headers=headers)
+    if resp.status_code < 200 or resp.status_code > 300:
         raise SCOSAccessError(f'Сервер СЦОС недоступен: {resp.text}')
 
 
-def create_request_row(unit) -> str:
+def create_add_request_row(unit) -> str:
     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
                   f'"{unit.__tablename__}": [{unit.to_json()}]}}'
     return request_row
 
 
-def add_data_to_scos(unit):
-    body = create_request_row(unit)
-    resp = requests.post(endpoint_urls[unit.__tablename__], headers=headers, data=body)
+# def create_update_request_row(unit) -> str:
+#     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
+#                   f'{unit.to_json()}'
+#     return request_row
 
-    if resp.status_code != 201:
-        raise SCOSAddError(f'Ошибка внесения данных в СЦОС:\n body = {body}\n '
-                           f'url = {endpoint_urls[unit.__tablename__]}\n '
+
+def get_new_scos_id(resp):
+    if resp.status_code < 200 or resp.status_code > 300:
+        raise SCOSAddError(f'Ошибка внесения данных в СЦОС:\n body = {resp.request.body}\n '
+                           f'url = {resp.url}\n '
                            f'error = {resp.text}')
     resp_json = resp.json()['results'][0]
     scos_id = resp_json['id']
     if scos_id is None:
-        raise SCOSAddError(f'Ошибка внесения данных в СЦОС:\n body = {body}\n '
+        raise SCOSAddError(f'При загрузке получены неверные данные:\n body = {resp.request.body}\n '
                            f"uploadStatusType = {resp_json['uploadStatusType']}, "
                            f"additional_info = {resp_json['additional_info']}")
-    unit.scos_id = scos_id
+    return scos_id
+
+
+def send_to_scos(unit, action_type: str):
+    if action_type == 'add':
+        body = create_add_request_row(unit)
+        resp = requests.post(get_endpoint_url(unit), headers=headers, data=body)
+        unit.scos_id = get_new_scos_id(resp)
+    elif action_type == 'upd':
+        body = unit.to_json()                           # create_update_request_row(unit)
+        resp = requests.put(get_endpoint_url(unit, action_type='upd'), headers=headers, data=body)
+    else:
+        resp = requests.delete(get_endpoint_url(unit, action_type='del'), headers=headers)
     unit.last_scos_update = datetime.now()
     return resp.status_code, resp.text
 
@@ -194,3 +225,6 @@ def add_data_to_scos(unit):
 #     else:
 #         logger.info(f'Удаление из таблицы {scos_unit.get_table()} по url {url}')
 #     return resp.status_code, resp.text
+
+if __name__ == '__main__':
+    print(get_endpoint_url('', 'upd'))
