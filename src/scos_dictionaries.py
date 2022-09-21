@@ -1,5 +1,5 @@
 # Форма обучения
-education_form = {'Заочная': 'EXTRAMURAL', 'Очная': 'FULL_TIME','оОчнозаочная': 'PART_TIME',
+education_form = {'Заочная': 'EXTRAMURAL', 'Очная': 'FULL_TIME','Очнозаочная': 'PART_TIME',
                   'Сок.заочная': 'SHORT_EXTRAMURAL', 'Сок.очная': 'SHORT_FULL_TIME', 'Экстернат': 'EXTERNAL'}
 
 # Движение студентов
