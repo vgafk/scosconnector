@@ -12,6 +12,7 @@ def send_data_to_scos():
         scos_connector.check_connection()
         units_list['add'] = local_base.get_new_units_list()      # Добавляем новые записи
         units_list['upd'] = local_base.get_changed_units()       # Добавляем измененные записи
+        units_list['del'] = local_base.get_deleted_units()
         for action, units in units_list.items():
             for unit in units:
                 scos_connector.send_to_scos(unit, action_type=action)

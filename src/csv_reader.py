@@ -67,6 +67,7 @@ def read_file(file: str) -> list[local_base.Base]:
 
 
 def clear_scv_directory():
+    """Очистка дирректории с csv файлами"""
     for file in os.scandir(CSV_FILE_PATH):
         os.remove(file.path)
 

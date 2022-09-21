@@ -3,7 +3,7 @@ from datetime import datetime
 from os.path import exists
 
 from settings import LOCAL_BASE_PATH, ORG_ID
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Date
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Date, and_
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from uuid import uuid4
 from exceptions import ClassNotExists
@@ -192,7 +192,7 @@ class Student(Base):
     last_scos_update = Column(DateTime, nullable=True)
     deleted = Column(DateTime, nullable=True)
     deleted_scos = Column(DateTime, nullable=True)
-    study_plan_disciplines = relationship("StudyPlanStudents", backref="student")
+    study_plan_students = relationship("StudyPlanStudents", backref="student")
     contingent_flows = relationship("ContingentFlows", backref="student")
     marks = relationship("Marks", backref="student")
 
@@ -428,8 +428,20 @@ def update_in_base(units: list):
         session.commit()
 
 
+def get_deleted_units():       # добавить что в сцос не удалено
+    units = []
+    for unit_class in unit_classes_list.values():
+        units.extend(session.query(unit_class).filter(and_(unit_class.deleted.is_not(None),
+                                                      unit_class.deleted_scos.is_(None))).all())
+    return units
+
+
 def delete_from_base(units: list):
-    pass
+    for unit in units:
+        base_unit_type = type(unit)
+        base_unit = session.query(base_unit_type).filter_by(id=unit.id)
+        base_unit.update({'deleted': datetime.now()})
+        session.commit()
 
 
 def commit():
