@@ -3,11 +3,11 @@ from datetime import datetime
 
 from loguru import logger
 import requests
-import settings
+from settings import Settings
 from exceptions import SCOSAccessError, SCOSAddError, OperationTypeError
 from local_base import LocalBase
 
-headers = {'Content-Type': 'application/json', 'X-CN-UUID': settings.X_CN_UUID}
+headers = {'Content-Type': 'application/json', 'X-CN-UUID': Settings().get_x_cn_uuid()}
 
 # Общий формат url
 API_URL = 'https://test.online.edu.ru/'  # тестовый контур

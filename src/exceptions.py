@@ -12,3 +12,11 @@ class SCOSAddError(Exception):
 
 class OperationTypeError(Exception):
     pass
+
+
+class BaseConnectionError(Exception):
+    pass
+
+
+class CSVDirectoryError(Exception):
+    pass
