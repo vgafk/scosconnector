@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
 import sys
 from loguru import logger
-from local_base import LocalBase, SQLiteBase
+from local_base import LocalBase
+from sqlitebase import SQLiteBase
 from scos_connector import SCOSConnector
 from csv_reader import CSVReader
 from action import Action

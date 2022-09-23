@@ -1,11 +1,13 @@
-import json
 from datetime import datetime
-
 from loguru import logger
 import requests
+from requests import Response
+
 from settings import Settings
 from exceptions import SCOSAccessError, SCOSAddError, OperationTypeError
 from local_base import LocalBase
+from scos_dictionaries import ActionsList
+from models import Base
 
 headers = {'Content-Type': 'application/json', 'X-CN-UUID': Settings().get_x_cn_uuid()}
 
@@ -32,7 +34,7 @@ class SCOSConnector:
         'marks': API_URL_V2 + 'marks'
     }
 
-    def __get_endpoint_url(self, unit: LocalBase.Base, action_type: str) -> str:
+    def __get_endpoint_url(self, unit: LocalBase.base, action_type: ActionsList) -> str:
         """
         Формирование endpoint'a на основании действия и типа передаваемых данных('__tablename__')
 
@@ -41,9 +43,9 @@ class SCOSConnector:
         :return: ссылка на сервере СЦОС
         """
         match action_type:
-            case 'add':
+            case ActionsList.ADD:
                 return self.endpoint_urls[unit.__tablename__]
-            case 'upd' | 'del':
+            case ActionsList.UPD | ActionsList.DEL:
                 if unit.__tablename__ == 'study_plan_disciplines':  # Связь учебных планов и дисциплин идет через планы
                     return f"{self.endpoint_urls['study_plans']}/{unit.study_plan.scos_id}/" \
                            f"disciplines/{unit.discipline.scos_id}?semester={unit.semester}"
@@ -65,9 +67,13 @@ class SCOSConnector:
             raise SCOSAccessError(f'Сервер СЦОС недоступен: {resp.text}')
 
     @staticmethod
-    def __create_add_request_row(unit) -> str:
-        """Формирование строки тела запроса, используется при добавлении записей пакетом """
-        request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
+    def __create_add_request_row(unit: Base) -> str:
+        """
+        Формирование строки тела запроса, используется при добавлении записей пакетом
+        :param unit:
+        :return: Строка тела запроса к серверу СЦОС
+        """
+        request_row = f'{{"organization_id": "{Settings().get_org_id()}", ' \
                       f'"{unit.__tablename__}": [{unit.to_json()}]}}'  # Формируется список из unit.to_json()
         return request_row
 
@@ -80,13 +86,17 @@ class SCOSConnector:
                                    f'url = {resp.url}\n '
                                    f'error = {resp.text}')
             return resp
-
         return wrapper
 
     @scos_request
-    def __add_to_scos(self, unit):
+    def add_to_scos(self, unit: Base) -> Response:
+        """
+        Добавляем запись в СЦОС
+        :param unit:
+        :return: Ответ сервера
+        """
         body = self.__create_add_request_row(unit)
-        resp = requests.post(self.__get_endpoint_url(unit, action_type='add'), headers=headers, data=body)
+        resp = requests.post(self.__get_endpoint_url(unit, action_type=ActionsList.ADD), headers=headers, data=body)
         unit.last_scos_update = datetime.now()  # Устанавливаем дату и время добавления в СЦОС
         resp_json = resp.json()['results'][0]
         scos_id = resp_json['id']
@@ -98,27 +108,27 @@ class SCOSConnector:
         return resp
 
     @scos_request
-    def __update_in_scos(self, unit):
+    def update_in_scos(self, unit: Base) -> Response:
+        """
+        Обновляем запись в СЦОС
+        :param unit:
+        :return: Ответ сервера
+        """
         body = unit.to_json()
-        resp = requests.put(self.__get_endpoint_url(unit, action_type='upd'), headers=headers, data=body)
+        resp = requests.put(self.__get_endpoint_url(unit, action_type=ActionsList.UPD), headers=headers, data=body)
         unit.last_scos_update = datetime.now()
         return resp
 
     @scos_request
-    def __delete_from_scos(self, unit):
-        resp = requests.delete(self.__get_endpoint_url(unit, action_type='del'), headers=headers)
+    def delete_from_scos(self, unit: Base) -> Response:
+        """
+        Удаляем запись из СЦОС
+        :param unit:
+        :return: Ответ сервера
+        """
+        resp = requests.delete(self.__get_endpoint_url(unit, action_type=ActionsList.DEL), headers=headers)
         unit.deleted_scos = datetime.now()
         return resp
-
-    def send_to_scos(self, unit, action_type: str):
-        if action_type == 'add':
-            resp = self.__add_to_scos(unit)
-        elif action_type == 'upd':
-            resp = self.__update_in_scos(unit)
-        else:
-            resp = self.__delete_from_scos(unit)
-        logger.info(resp.text)
-        return resp.status_code, resp.text
 
 
 # def get_data_from_scos(data_type: str, unit_id: str = ''):
@@ -194,63 +204,6 @@ class SCOSConnector:
 #         local_base.insert(marks)
 #
 #
-# def add_data(data_type: str):
-#     return send_add_request(data_type, data_classes[data_type])
-#
-#
-# def update_data(updated_data: [ScosUnit]):
-#     for unit in updated_data:
-#         send_update_request(unit)
-#
-#
-# # def create_request_row(title: str, units: list[ScosUnit]) -> str:
-# #     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
-# #                   f'"{title}": {[ob.to_json() for ob in units]}}}'
-# #     return request_row
-#
-#
-# def delete_data(deleted_data: [ScosUnit]):
-#     for unit in deleted_data:
-#         send_delete_request(unit)
-#
-#
-# def create_request_row(units: list, title: str):
-#     request_row = f'{{"organization_id": "{settings.ORG_ID}", ' \
-#                       f'"{title}": {[ob.to_json() for ob in units]}}}'
-#     return request_row
-#
-#
-# def send_add_request(json_parameter: str, scos_unit: ScosUnit):  # TODO переписать на вызов из базы
-#     # Файл должен называться как параметр, потому просто добавляем расширение csv
-#     # json_parameter_data = scos_unit.from_file(json_parameter + '.csv')
-#     # body = create_request_row(json_parameter, json_parameter_data)
-#     # resp = requests.post(endpoint_urls[json_parameter], headers=headers,
-#     #                      data=body)
-#     # return resp.status_code, resp.text
-#     pass
-#
-#
-# def send_update_request(scos_unit: ScosUnit):
-#     body = scos_unit.to_json()
-#     url = endpoint_urls[scos_unit.get_table()] + '/' + scos_unit.id
-#     resp = requests.put(url, headers=headers, data=body)
-#     if resp.status_code not in API_codes['Success']:
-#         logger.error(f'Ошибка обновления из таблицы {scos_unit.get_table()} запросом: {body}')
-#         logger.error(str(resp.status_code), resp.text)
-#     else:
-#         logger.info(f'обновление из таблицы {scos_unit.get_table()} запросом: {body}')
-#     return resp.status_code, resp.text
-#
-#
-# def send_delete_request(scos_unit:  ScosUnit):
-#     url = endpoint_urls[scos_unit.get_table()] + '/' + scos_unit.id
-#     resp = requests.delete(url, headers=headers)
-#     if resp.status_code not in API_codes['Success']:
-#         logger.info(f'Ошибка удаления из таблицы {scos_unit.get_table()} по url {url}')
-#         logger.error(str(resp.status_code), resp.text)
-#     else:
-#         logger.info(f'Удаление из таблицы {scos_unit.get_table()} по url {url}')
-#     return resp.status_code, resp.text
 
 if __name__ == '__main__':
     pass

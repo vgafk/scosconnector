@@ -134,6 +134,7 @@ src/cache.db
 # Фиректория для файлов csv
 csv_files/
 csv/
+csv_for_upload/
 
 # PyCharm settings
 .idea

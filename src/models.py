@@ -1,17 +1,14 @@
 import json
-from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import uuid4
-
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Date
-from sqlalchemy.orm import relationship
-
-from local_base import LocalBase
+from sqlalchemy.orm import relationship, declarative_base
 from settings import Settings
 import scos_dictionaries as dicts
 
+Base = declarative_base()
 
-class EducationalProgram(LocalBase.Base):
+class EducationalProgram(Base):
     __tablename__ = 'educational_programs'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -58,7 +55,8 @@ class EducationalProgram(LocalBase.Base):
             'end_year': self.end_year
         })
 
-class StudyPlan(LocalBase.Base):
+
+class StudyPlan(Base):
     __tablename__ = 'study_plans'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -99,7 +97,7 @@ class StudyPlan(LocalBase.Base):
 
     def to_json(self):
         return json.dumps({
-            'organization_id': Settings.get_org_id(),
+            'organization_id': Settings().get_org_id(),
             'external_id': self.external_id,
             'title': self.title,
             'direction': self.educational_program.direction,  # Объект educational_program
@@ -110,7 +108,8 @@ class StudyPlan(LocalBase.Base):
             'end_year': self.end_year
         })
 
-class Discipline(LocalBase.Base):
+
+class Discipline(Base):
     __tablename__ = 'disciplines'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -142,7 +141,8 @@ class Discipline(LocalBase.Base):
             'title': self.title
         })
 
-class StudyPlanDisciplines(LocalBase.Base):
+
+class StudyPlanDisciplines(Base):
     __tablename__ = 'study_plan_disciplines'
     id = Column(Integer, primary_key=True)
     study_plan_id = Column(ForeignKey("study_plans.id"), primary_key=True)
@@ -167,7 +167,8 @@ class StudyPlanDisciplines(LocalBase.Base):
             'semester': self.semester
         })
 
-class Student(LocalBase.Base):
+
+class Student(Base):
     __tablename__ = 'students'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -227,7 +228,8 @@ class Student(LocalBase.Base):
             'study_year': self.study_year
         })
 
-class StudyPlanStudents(LocalBase.Base):
+
+class StudyPlanStudents(Base):
     __tablename__ = 'study_plan_students'
     id = Column(Integer, primary_key=True)
     study_plan_id = Column(ForeignKey("study_plans.id"))
@@ -249,7 +251,8 @@ class StudyPlanStudents(LocalBase.Base):
             'student': self.student.external_id
         })
 
-class ContingentFlows(LocalBase.Base):
+
+class ContingentFlows(Base):
     __tablename__ = 'contingent_flows'
     id = Column(Integer, primary_key=True)
     scos_id = Column(String)
@@ -303,7 +306,8 @@ class ContingentFlows(LocalBase.Base):
             'details': self.details
         })
 
-class Marks(LocalBase.Base):
+
+class Marks(Base):
     __tablename__ = 'marks'
     id = Column(Integer, primary_key=True)
     scos_id = Column(String)
@@ -363,7 +367,12 @@ unit_classes_list = {
 }
 
 
-def get_unit(table: str, **kwargs) -> LocalBase.Base:
+def get_unit(table: str, **kwargs) -> Base:
     """Создание экземпляра в соответствии с именем таблицы"""
     unit = unit_classes_list[table](**kwargs)
     return unit
+
+
+def get_unit_classes_list() -> dict['str', Base]:
+    """Список всех классов базы данных"""
+    return unit_classes_list

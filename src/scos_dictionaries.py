@@ -13,8 +13,14 @@ flow_types = {'Зачисление': 'ENROLLMENT', 'Отчисление': 'DED
 marks_types = {'Оценка': 'MARK', 'Зачет': 'CREDIT', 'Диф.зачет': 'DIF_CREDIT',
                '100оценка': 'HUNDRED_POINT'}
 
+
+# Префиксы файлов для определения действия в данными в файле
 class ActionsList(Enum):
-    ADD = 'add'
-    UPD = 'upd'
-    DEL = 'del'
-    NOP = 'nop'
+    """a_ добавление, u_ обновление, d_ удаление"""
+    ADD = 'a'
+    UPD = 'u'
+    DEL = 'd'
+
+    @classmethod
+    def list_values(cls):
+        return list(map(lambda x: x.value, cls))

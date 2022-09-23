@@ -21,10 +21,11 @@ class CSVReader:
             logger.debug(f"Директория {self.csv_file_path} для csv файлов не существует")
             if create:
                 logger.debug(f"Директорию требуется создать")
+                self.create_csv_dir()
             else:
                 raise CSVDirectoryError("Директория для CSV файлов не существует и не создана")
 
-    def __create_csv_dir(self):
+    def create_csv_dir(self) -> None:
         """Создание директории для csv файлов"""
         try:
             os.mkdir(self.csv_file_path)
@@ -34,26 +35,24 @@ class CSVReader:
         else:
             logger.info(f'Создана директория для csv файлов: {self.csv_file_path}')
 
-    def read_files(self) -> dict[ActionsList, list[LocalBase.Base]]:
-        """Чтение всех файлов в директории по типам, a_ добавление, u_ обновление, d_ удаление"""
-        units_list: dict = {ActionsList.ADD: [], ActionsList.UPD: [], ActionsList.DEL: []}
+    def read_files(self) -> dict[ActionsList, list[LocalBase.base]]:
+        """Чтение всех файлов в директории по типам"""
+        units_list: dict = {x: [] for x in ActionsList}
         for file in os.listdir(self.csv_file_path):
-            if file.startswith('a_'):
-                action = ActionsList.ADD
-            elif file.startswith('u_'):
-                action = ActionsList.UPD
-            elif file.startswith('d_'):
-                action = ActionsList.DEL
-            else:
-                action = ActionsList.NOP
-
-            units_list[action] += self.__read_file(self.csv_file_path + '/' + file)
+            action = file.split('_')[0]
+            if action in ActionsList.list_values():
+                units_list[ActionsList(action)] += self.__read_file(self.csv_file_path + '/' + file)
             logger.debug(f'прочитан файл {file}')
+
+        logger.info(f'Чтение файлов завершено, для добавления: {len(units_list[ActionsList.ADD])}, '
+                     f'для изменения: {len(units_list[ActionsList.UPD])}, '
+                     f'для удаления {len(units_list[ActionsList.DEL])}\n')
 
         return units_list
 
     @staticmethod
-    def __read_file(file: str) -> list[LocalBase.Base]:
+    def __read_file(file: str) -> list[LocalBase.base]:
+        """Читает файл в формате csv"""
         units_list = []
         try:
             file_name = os.path.basename(file)
