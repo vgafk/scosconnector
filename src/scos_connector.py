@@ -1,5 +1,4 @@
 from datetime import datetime
-from loguru import logger
 import requests
 from requests import Response
 
@@ -129,7 +128,6 @@ class SCOSConnector:
         resp = requests.delete(self.__get_endpoint_url(unit, action_type=ActionsList.DEL), headers=headers)
         unit.deleted_scos = datetime.now()
         return resp
-
 
 
 if __name__ == '__main__':

@@ -5,10 +5,24 @@ from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Date
 from sqlalchemy.orm import relationship, declarative_base
 from settings import Settings
 import scos_dictionaries as dicts
+from abc import abstractmethod
 
 Base = declarative_base()
 
-class EducationalProgram(Base):
+
+class Updatable:
+    @abstractmethod
+    def update_data(self):
+        pass
+
+
+class Serializable:
+    @abstractmethod
+    def to_json(self):
+        pass
+
+
+class EducationalProgram(Base, Updatable, Serializable):
     __tablename__ = 'educational_programs'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -56,7 +70,7 @@ class EducationalProgram(Base):
         })
 
 
-class StudyPlan(Base):
+class StudyPlan(Base, Updatable, Serializable):
     __tablename__ = 'study_plans'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -109,7 +123,7 @@ class StudyPlan(Base):
         })
 
 
-class Discipline(Base):
+class Discipline(Base, Updatable, Serializable):
     __tablename__ = 'disciplines'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -142,7 +156,7 @@ class Discipline(Base):
         })
 
 
-class StudyPlanDisciplines(Base):
+class StudyPlanDisciplines(Base, Serializable):
     __tablename__ = 'study_plan_disciplines'
     id = Column(Integer, primary_key=True)
     study_plan_id = Column(ForeignKey("study_plans.id"), primary_key=True)
@@ -168,7 +182,7 @@ class StudyPlanDisciplines(Base):
         })
 
 
-class Student(Base):
+class Student(Base, Updatable, Serializable):
     __tablename__ = 'students'
     id = Column(Integer, primary_key=True)
     external_id = Column(String, nullable=False)
@@ -229,7 +243,7 @@ class Student(Base):
         })
 
 
-class StudyPlanStudents(Base):
+class StudyPlanStudents(Base, Serializable):
     __tablename__ = 'study_plan_students'
     id = Column(Integer, primary_key=True)
     study_plan_id = Column(ForeignKey("study_plans.id"))
@@ -252,7 +266,7 @@ class StudyPlanStudents(Base):
         })
 
 
-class ContingentFlows(Base):
+class ContingentFlows(Base, Updatable, Serializable):
     __tablename__ = 'contingent_flows'
     id = Column(Integer, primary_key=True)
     scos_id = Column(String)
@@ -307,7 +321,7 @@ class ContingentFlows(Base):
         })
 
 
-class Marks(Base):
+class Marks(Base, Updatable, Serializable):
     __tablename__ = 'marks'
     id = Column(Integer, primary_key=True)
     scos_id = Column(String)

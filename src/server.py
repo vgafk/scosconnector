@@ -1,3 +1,5 @@
+import time
+import schedule
 from argparse import ArgumentParser
 import sys
 from loguru import logger
@@ -18,9 +20,6 @@ def setup_params():
     parser.add_argument('--to_scos', metavar='to_scos', type=str, dest='to_scos',
                         help='Необходимость записи в СЦОС', default='yes',
                         choices=['yes', 'no'])
-    parser.add_argument('--first_run', metavar='first_run', type=str, dest='first_run',
-                        help='Первый запуск программы', default='no',
-                        choices=['yes', 'no'])
     return parser.parse_args()
 
 
@@ -29,28 +28,24 @@ def set_logger(level: str) -> None:
     logger.add(sys.stdout, level=level.upper())
 
 
-def first_run(base_local: LocalBase, reader_csv: CSVReader):
-    try:
-        base_local.check_base(create=True)
-        reader_csv.check_csv_dir(create=True)
-    except BaseConnectionError as ex:
-        logger.critical(f'{type(ex)}: {ex}')
-
-
 def set_action():
     """Создание объектов для работы"""
     args = setup_params()
-    csvreader = CSVReader(file_dir='csv_files')
+    reader = CSVReader(file_dir='csv_files')
     base = SQLiteBase(base_file_path='cache.db')
-    connector = SCOSConnector()
+    if args.to_scos == 'yes':
+        connector = SCOSConnector()
+    else:
+        connector = None
 
-    if args.first_run:
-        first_run(base_local=base, reader_csv=csvreader)
-
-    return Action(base_local=base, reader_csv=csvreader, connector=connector)
+    return Action(base_local=base, reader_csv=reader, connector=connector)
 
 
 if __name__ == "__main__":
     action = set_action()
-
     action.run_synchronization()
+    schedule.every(10).seconds.do(action.run_synchronization)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
