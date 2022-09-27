@@ -1,6 +1,6 @@
 from local_base import LocalBase
 from scos_connector import SCOSConnector
-from csv_reader import CSVReader
+from reader import Reader
 from loguru import logger
 from scos_dictionaries import ActionsList
 
@@ -8,15 +8,15 @@ from scos_dictionaries import ActionsList
 scos_error_count = 1
 
 
-class Action:
+class Synchronizer:
     """Класс синхронизации собственной базы данных с ИС организации, и с СЦОС"""
 
-    def __init__(self, base_local: LocalBase, connector: SCOSConnector, reader_csv: CSVReader):
-        self.base_local = base_local
+    def __init__(self, base: LocalBase, connector: SCOSConnector, reader: Reader):
+        self.base_local = base
         self.connector = connector
-        self.reader = reader_csv
+        self.reader = reader
 
-    def sent_to_local_base(self, unit_list: dict[ActionsList, list[LocalBase.base]]):
+    def _sent_to_local_base(self, unit_list: dict[ActionsList, list[LocalBase.base]]):
         self.base_local.check_base(True)
         self.base_local.add_to_base(unit_list[ActionsList.ADD])
         self.base_local.update_in_base(unit_list[ActionsList.UPD])
@@ -25,7 +25,7 @@ class Action:
 
         logger.info("Изменение внесение, изменение и удаление данных в локальной базе данных завершены")
 
-    def send_to_scos(self, unit_list: dict[ActionsList, list[LocalBase.base]]):
+    def _send_to_scos(self, unit_list: dict[ActionsList, list[LocalBase.base]]):
         self.connector.check_connection()
         for unit in unit_list[ActionsList.ADD]:
             self.connector.add_to_scos(unit)
@@ -41,12 +41,12 @@ class Action:
         """Обновление локальной базы данных и синхронизация с сервером СЦОС"""
         units_list = self.reader.get_new_data()
 
-        self.sent_to_local_base(units_list)
+        self._sent_to_local_base(units_list)
 
         if self.connector:
             scos_unit_list = self.base_local.get_all_units()
             logger.debug("Синхронизация с СЦОС...")
-            self.send_to_scos(scos_unit_list)
+            self._send_to_scos(scos_unit_list)
             logger.info("Синхронизация локальной базы данных с сервером СЦОС завершена")
         else:
             logger.warning("Синхронизация локальной базы данных с сервером СЦОС отключена")

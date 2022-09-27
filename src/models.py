@@ -12,13 +12,13 @@ Base = declarative_base()
 
 class Updatable:
     @abstractmethod
-    def update_data(self):
+    def update_data(self) -> dict[str, str]:
         pass
 
 
 class Serializable:
     @abstractmethod
-    def to_json(self):
+    def to_json(self) -> str:
         pass
 
 

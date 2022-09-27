@@ -1,7 +1,6 @@
 from datetime import datetime
 import requests
 from requests import Response
-
 from settings import Settings
 from exceptions import SCOSAccessError, SCOSAddError, OperationTypeError
 from local_base import LocalBase

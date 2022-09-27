@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from models import Base, get_unit_classes_list
+from models import Base, get_unit_classes_list, Updatable
 from loguru import logger
 from scos_dictionaries import ActionsList
 
@@ -20,7 +20,7 @@ class LocalBase(ABC):
     def create_base(self):
         pass
 
-    def get_new_units_list(self):
+    def get_new_units_list(self) -> Base:
         """Выборка новых записей из локальной базы"""
         units = []
         for unit_class in get_unit_classes_list().values():
@@ -28,7 +28,7 @@ class LocalBase(ABC):
         return units
 
     def add_to_base(self, units: list[Base]):
-        """Добаление записей в локальную базу"""
+        """Добавление записей в локальную базу"""
         self.session.add_all(units)
         self.session.commit()
         logger.debug('Внесение новых записей в локальную базе завершено')
@@ -41,7 +41,7 @@ class LocalBase(ABC):
                 self.session.query(unit_class).filter(unit_class.last_scos_update < unit_class.last_update).all())
         return units
 
-    def update_in_base(self, units: list[Base]):
+    def update_in_base(self, units: list[Updatable]):
         """Обновление записей в локальной базе"""
         for unit in units:
             base_unit_type = type(unit)
@@ -69,10 +69,9 @@ class LocalBase(ABC):
 
     def get_all_units(self):
         """Выборка сех записей подлежащих отправке в СЦОС"""
-        unit_list: {ActionsList: list[Base]} = {}
-        unit_list[ActionsList.ADD] = self.get_new_units_list()
-        unit_list[ActionsList.UPD] = self.get_changed_units()
-        unit_list[ActionsList.DEL] = self.get_deleted_units()
+        unit_list: {ActionsList: list[Base]} = {ActionsList.ADD: self.get_new_units_list(),
+                                                ActionsList.UPD: self.get_changed_units(),
+                                                ActionsList.DEL: self.get_deleted_units()}
         return unit_list
 
     def commit(self):

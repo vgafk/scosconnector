@@ -3,12 +3,10 @@ import schedule
 from argparse import ArgumentParser
 import sys
 from loguru import logger
-from local_base import LocalBase
-from sqlitebase import SQLiteBase
+from sqlitebase import LocalBase, SQLiteBase
 from scos_connector import SCOSConnector
-from csv_reader import CSVReader
-from action import Action
-from exceptions import BaseConnectionError
+from csv_reader import Reader, CSVReader
+from synchronizer import Synchronizer
 
 
 # Парсинг входящие параметры
@@ -20,6 +18,12 @@ def setup_params():
     parser.add_argument('--to_scos', metavar='to_scos', type=str, dest='to_scos',
                         help='Необходимость записи в СЦОС', default='yes',
                         choices=['yes', 'no'])
+    parser.add_argument('--base', metavar='base', type=str, dest='base',
+                        help='Тип базы данных', default='sqlite',
+                        choices=['sqlite'])
+    parser.add_argument('--new_data_format', metavar='reader', type=str, dest='reader',
+                        help='Формат данных обновления', default='csv',
+                        choices=['csv'])
     return parser.parse_args()
 
 
@@ -28,23 +32,36 @@ def set_logger(level: str) -> None:
     logger.add(sys.stdout, level=level.upper())
 
 
-def set_action():
+def set_synchronizer(new_data_format: str, base: str, to_scos: bool) -> Synchronizer:
     """Создание объектов для работы"""
-    args = setup_params()
-    reader = CSVReader(file_dir='csv_files')
-    base = SQLiteBase(base_file_path='cache.db')
-    if args.to_scos == 'yes':
-        connector = SCOSConnector()
-    else:
-        connector = None
 
-    return Action(base_local=base, reader_csv=reader, connector=connector)
+    reader = get_reader(new_data_format)
+    base = get_database(base)
+    connector = SCOSConnector() if to_scos == 'yes' else None
+
+    return Synchronizer(base=base, reader=reader, connector=connector)
+
+
+def get_reader(data_format: str) -> Reader:
+    match data_format:
+        case 'csv':
+            return CSVReader(file_dir='csv_files')
+
+
+def get_database(base: str) -> LocalBase:
+    match base:
+        case 'sqlite':
+            return SQLiteBase(base_file_path='cache.db')
 
 
 if __name__ == "__main__":
-    action = set_action()
-    action.run_synchronization()
-    schedule.every(10).seconds.do(action.run_synchronization)
+    args = setup_params()
+
+    set_logger(args.loger_level)
+
+    synchronizer = set_synchronizer(args.reader, args.base, args.to_scos)
+    synchronizer.run_synchronization()
+    schedule.every(10).seconds.do(synchronizer.run_synchronization)
 
     while True:
         schedule.run_pending()
